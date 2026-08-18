@@ -1,0 +1,9 @@
+{
+  "name": "Ordem de Serviço - Manutenção",
+  "short_name": "Ordem de Serviço",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#f3f6fa",
+  "theme_color": "#0b1220",
+  "lang": "pt-BR"
+}

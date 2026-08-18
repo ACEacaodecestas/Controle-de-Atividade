@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0b1220">
+<title>Ordem de Serviço • Manutenção</title>
+<link rel="manifest" href="manifest.json">
+<style>
+:root{--bg:#f3f6fa;--card:#fff;--ink:#162033;--muted:#667085;--line:#d9e0e8;--primary:#0b5cff;--danger:#d92d20;--ok:#087443}
+*{box-sizing:border-box}body{margin:0;font-family:Inter,Arial,sans-serif;background:var(--bg);color:var(--ink)}
+header{position:sticky;top:0;z-index:10;background:#0b1220;color:white;padding:14px 16px;box-shadow:0 2px 12px #0002}
+header .top{max-width:1100px;margin:auto;display:flex;gap:12px;align-items:center;justify-content:space-between}
+h1{font-size:20px;margin:0}.wrap{max-width:1100px;margin:18px auto;padding:0 12px}
+nav{display:flex;gap:8px;overflow:auto;margin-bottom:14px}
+nav button{white-space:nowrap}
+button{border:0;border-radius:10px;padding:11px 14px;font-weight:700;cursor:pointer;background:#e7edf5;color:#182230}
+button.primary{background:var(--primary);color:white}button.danger{background:#fee4e2;color:#b42318}
+button.ok{background:#dcfae6;color:#067647}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:14px;box-shadow:0 2px 10px #0000000a}
+.card h2{font-size:17px;margin:0 0 14px;border-bottom:1px solid var(--line);padding-bottom:10px}
+.grid{display:grid;grid-template-columns:repeat(12,1fr);gap:12px}
+.col-12{grid-column:span 12}.col-8{grid-column:span 8}.col-6{grid-column:span 6}.col-4{grid-column:span 4}.col-3{grid-column:span 3}
+label{display:block;font-size:13px;font-weight:700;margin-bottom:5px}input,select,textarea{width:100%;padding:10px 11px;border:1px solid #cbd5e1;border-radius:9px;font:inherit;background:white}
+textarea{min-height:90px;resize:vertical}.checks{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.checks label{font-weight:500;display:flex;gap:8px;align-items:flex-start}
+.checks input{width:auto;margin-top:2px}.section-note{font-size:12px;color:var(--muted);background:#f8fafc;border-left:4px solid #94a3b8;padding:10px;margin:8px 0}
+.toolbar{display:flex;gap:8px;flex-wrap:wrap}.hidden{display:none!important}
+.sig-wrap{border:2px dashed #aab5c5;border-radius:10px;background:#fff;touch-action:none}
+canvas{display:block;width:100%;height:180px}.small{font-size:12px;color:var(--muted)}
+.photo-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.photo-card{border:1px solid var(--line);border-radius:10px;padding:7px}.photo-card img{width:100%;height:150px;object-fit:cover;border-radius:7px}
+.history-item{border:1px solid var(--line);border-radius:10px;padding:12px;margin-bottom:8px;display:flex;justify-content:space-between;gap:10px;align-items:center}
+.badge{padding:4px 8px;border-radius:20px;font-size:11px;background:#e7edf5}
+#toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:#111827;color:#fff;padding:11px 15px;border-radius:9px;display:none;z-index:30}
+@media(max-width:700px){.col-8,.col-6,.col-4,.col-3{grid-column:span 12}.checks{grid-template-columns:1fr}.photo-grid{grid-template-columns:1fr 1fr}header .top{align-items:flex-start}.toolbar button{flex:1}.history-item{align-items:flex-start;flex-direction:column}}
+@media print{header,nav,.toolbar,.no-print{display:none!important}.wrap{margin:0;padding:0}.card{box-shadow:none;break-inside:avoid}.card h2{font-size:15px}body{background:#fff}}
+</style>
+</head>
+<body>
+<header><div class="top"><h1>🛠️ ORDEM DE SERVIÇO</h1><span id="osHeader">Nova OS</span></div></header>
+<div class="wrap">
+<nav class="no-print">
+<button class="primary" onclick="showTab('form')">📝 Nova OS</button>
+<button onclick="showTab('history')">📋 Histórico</button>
+<button onclick="saveOS()">💾 Salvar</button>
+<button class="ok" onclick="generatePDF()">📄 Gerar PDF</button>
+</nav>
+
+<section id="formTab">
+<form id="osForm">
+<div class="card"><h2>Identificação da Ordem de Serviço</h2>
+<div class="grid">
+<div class="col-3"><label>Nº da OS</label><input id="osNumber" readonly></div>
+<div class="col-3"><label>Data</label><input id="osDate" type="date"></div>
+<div class="col-3"><label>Data da visita</label><input id="visitDate" type="date"></div>
+<div class="col-3"><label>Status</label><select id="status"><option>Aberta</option><option>Em andamento</option><option>Concluída</option><option>Cancelada</option></select></div>
+<div class="col-6"><label>Tipo de atendimento</label><select id="serviceType"><option>Manutenção Preventiva</option><option>Manutenção Corretiva</option><option>Visita Técnica</option><option>Retorno</option><option>Emergencial</option></select></div>
+<div class="col-6"><label>Prioridade</label><select id="priority"><option>Baixa</option><option>Média</option><option>Alta</option><option>Emergencial</option></select></div>
+</div></div>
+
+<div class="card"><h2>1. Dados do Cliente</h2><div class="grid">
+<div class="col-6"><label>Cliente/Condomínio</label><input id="client"></div>
+<div class="col-6"><label>CNPJ/CPF</label><input id="document"></div>
+<div class="col-8"><label>Endereço</label><input id="address"></div>
+<div class="col-4"><label>Telefone</label><input id="phone"></div>
+<div class="col-6"><label>Responsável pelo acompanhamento</label><input id="responsible"></div>
+<div class="col-6"><label>Técnico responsável</label><input id="technician"></div>
+<div class="col-3"><label>Horário de chegada</label><input id="arrival" type="time"></div>
+<div class="col-3"><label>Horário de término</label><input id="departure" type="time"></div>
+</div></div>
+
+<div class="card"><h2>2. Solicitação / Motivo do Atendimento</h2>
+<label>Descrição do chamado ou serviço programado</label><textarea id="request"></textarea>
+<label>Sistema(s) envolvido(s)</label>
+<div class="checks" id="systems">
+<label><input type="checkbox" value="CFTV">CFTV</label><label><input type="checkbox" value="Controle de Acesso">Controle de Acesso</label>
+<label><input type="checkbox" value="Cerca Elétrica">Cerca Elétrica</label><label><input type="checkbox" value="Sistema de Alarme">Sistema de Alarme</label>
+<label><input type="checkbox" value="Infraestrutura/Rede">Infraestrutura/Rede</label><label><input type="checkbox" value="Fonte/Nobreak">Fonte/Nobreak</label>
+<label><input type="checkbox" value="Outro">Outro</label>
+</div><input id="otherSystem" placeholder="Outro sistema (se aplicável)">
+</div>
+
+<div class="card"><h2>3. Checklist – CFTV</h2>
+<div class="checks" id="cftvChecks"></div>
+<div class="grid"><div class="col-4"><label>Quantidade de câmeras verificadas</label><input id="cameraQty" type="number" min="0"></div><div class="col-8"><label>Câmeras com irregularidade</label><input id="cameraIssues"></div><div class="col-12"><label>Observações CFTV</label><textarea id="cftvObs"></textarea></div></div>
+</div>
+
+<div class="card"><h2>4. Checklist – Controle de Acesso</h2>
+<strong>Equipamentos</strong><div class="checks" id="accessEquip"></div>
+<strong>Testes</strong><div class="checks" id="accessTests"></div>
+<label>Equipamento com falha</label><input id="accessFault"><label>Observações</label><textarea id="accessObs"></textarea>
+</div>
+
+<div class="card"><h2>5. Checklist – Cerca Elétrica</h2><div class="section-note">Executar os testes seguindo os procedimentos de segurança aplicáveis ao equipamento e à instalação.</div>
+<div class="checks" id="fenceChecks"></div><label>Irregularidades encontradas</label><textarea id="fenceIssues"></textarea><label>Observações</label><textarea id="fenceObs"></textarea>
+</div>
+
+<div class="card"><h2>6. Checklist – Sistema de Alarme</h2>
+<strong>Central</strong><div class="checks" id="alarmCentral"></div><strong>Sensores</strong><div class="checks" id="alarmSensors"></div><strong>Comunicação</strong><div class="checks" id="alarmComm"></div>
+<label>Zonas com irregularidade</label><textarea id="alarmIssues"></textarea><label>Observações</label><textarea id="alarmObs"></textarea>
+</div>
+
+<div class="card"><h2>7. Infraestrutura, Rede e Alimentação</h2><div class="checks" id="infraChecks"></div><label>Irregularidades</label><textarea id="infraIssues"></textarea></div>
+
+<div class="card"><h2>8. Manutenção Corretiva</h2>
+<label>Problema relatado</label><textarea id="problem"></textarea><label>Diagnóstico técnico</label><textarea id="diagnosis"></textarea><label>Causa identificada</label><textarea id="cause"></textarea><label>Serviço executado</label><textarea id="serviceDone"></textarea><label>Equipamento/peça substituída</label><textarea id="replaced"></textarea><label>Teste realizado após o reparo</label><textarea id="repairTest"></textarea>
+<label>Resultado</label><div class="checks" id="repairResults"></div>
+</div>
+
+<div class="card"><h2>9. Materiais / Peças Utilizados</h2><div id="materials"></div><button type="button" onclick="addMaterial()">➕ Adicionar item</button></div>
+
+<div class="card"><h2>10. Registro Fotográfico</h2><div class="grid"><div class="col-6"><label>Fotos antes do serviço</label><select id="photosBefore"><option>Sim</option><option>Não</option><option>Não aplicável</option></select></div><div class="col-6"><label>Fotos após o serviço</label><select id="photosAfter"><option>Sim</option><option>Não</option><option>Não aplicável</option></select></div></div>
+<label>Adicionar fotos</label><input id="photoInput" type="file" accept="image/*" multiple capture="environment"><div id="photoGrid" class="photo-grid"></div><div class="small">As fotos ficam armazenadas nesta OS no navegador até você limpar os dados do aplicativo.</div></div>
+
+<div class="card"><h2>11. Pendências / Recomendações</h2><label>Pendências identificadas</label><textarea id="pending"></textarea><label>Recomendações técnicas</label><textarea id="recommendations"></textarea>
+<div class="grid"><div class="col-4"><label>Necessita orçamento adicional?</label><select id="extraQuote"><option>Não</option><option>Sim</option></select></div><div class="col-8"><label>Prazo recomendado para correção</label><input id="deadline"></div><div class="col-12"><label>Descrição do orçamento recomendado</label><textarea id="quoteDescription"></textarea></div></div></div>
+
+<div class="card"><h2>12. Condição Final do Sistema</h2><div class="checks" id="finalCondition"></div><label>Observações finais</label><textarea id="finalObs"></textarea></div>
+
+<div class="card"><h2>13. Aceite do Serviço</h2><p class="small">Declaro que acompanhei a execução dos serviços descritos nesta Ordem de Serviço e fui informado sobre as condições encontradas, serviços realizados, pendências e/ou recomendações registradas neste documento.</p>
+<div class="grid"><div class="col-6"><label>Nome do responsável pelo cliente</label><input id="clientSignName"><label>Cargo/Função</label><input id="clientRole"><label>Data</label><input id="clientSignDate" type="date"></div>
+<div class="col-6"><label>Assinatura do cliente — assine com o dedo</label><div class="sig-wrap"><canvas id="clientCanvas"></canvas></div><button type="button" onclick="clearCanvas('clientCanvas')">Limpar assinatura</button></div>
+<div class="col-6"><label>Nome do técnico responsável</label><input id="techSignName"><label>Data</label><input id="techSignDate" type="date"></div>
+<div class="col-6"><label>Assinatura do técnico</label><div class="sig-wrap"><canvas id="techCanvas"></canvas></div><button type="button" onclick="clearCanvas('techCanvas')">Limpar assinatura</button></div></div></div>
+
+<div class="card"><h2>Observação</h2><textarea id="generalNote">Esta Ordem de Serviço registra a situação dos equipamentos e sistemas no momento da visita técnica, conforme inspeções e testes realizados. Eventuais problemas ocultos, falhas intermitentes ou defeitos que não possam ser identificados durante a visita deverão ser registrados como pendência ou objeto de nova avaliação técnica.</textarea>
+<div class="grid"><div class="col-6"><label>OS encerrada em</label><input id="closedDate" type="date"></div><div class="col-6"><label>às</label><input id="closedTime" type="time"></div></div></div>
+
+<div class="toolbar no-print"><button type="button" class="primary" onclick="saveOS()">💾 Salvar OS</button><button type="button" class="ok" onclick="generatePDF()">📄 Gerar PDF</button><button type="button" onclick="window.print()">🖨️ Imprimir</button><button type="button" class="danger" onclick="newOS()">🧹 Nova OS</button></div>
+</form>
+</section>
+
+<section id="historyTab" class="hidden"><div class="card"><h2>Histórico de Ordens de Serviço</h2><input id="searchHistory" placeholder="Pesquisar por OS, cliente, técnico ou equipamento..." oninput="renderHistory()"><div id="history"></div></div></section>
+</div><div id="toast"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script>
+const lists={
+cftvChecks:["Verificação do funcionamento das câmeras","Verificação da imagem","Verificação de foco e enquadramento","Verificação de lente","Limpeza das lentes","Verificação de fixação","Verificação de conectores","Verificação do cabeamento","Verificação da alimentação","Verificação de câmeras offline","Teste de visualização ao vivo","Teste de infravermelho/visão noturna","Verificação de câmera com imagem distorcida/intermitente"],
+accessEquip:["Controladora","Leitor facial","Leitor RFID/Tag","Biometria","Fechadura eletromagnética","Fechadura elétrica","Eclusa/Intertravamento","Botoeira","Sensor magnético","Catraca","Portão","Interfonia"],
+accessTests:["Teste de abertura","Teste de fechamento","Teste de leitura facial","Teste de leitura de cartão/tag","Teste de botoeira","Teste de fechadura","Verificação de alimentação","Verificação de bateria/fonte","Verificação de comunicação de rede","Verificação dos usuários cadastrados","Teste de acionamento remoto","Verificação dos registros/eventos"],
+fenceChecks:["Central de choque funcionando","Alimentação elétrica verificada","Bateria verificada","Tensão de saída verificada conforme especificação do fabricante","Fios de alta tensão verificados","Isoladores verificados","Hastes verificadas","Fixações verificadas","Arames/fios verificados","Aterramento verificado","Sinais de oxidação identificados","Vegetação/objetos próximos removidos","Sirene testada","Disparo/alarme testado","Tamper/violação testado","Central comunicando corretamente","Perímetro inspecionado"],
+alarmCentral:["Central funcionando","Alimentação verificada","Bateria verificada","Comunicação verificada","Eventos verificados","Memória de eventos consultada"],
+alarmSensors:["Sensores magnéticos testados","Sensores PIR testados","Sensores externos testados","Sensor de movimento testado","Botão de pânico testado","Sirene testada","Teclado testado"],
+alarmComm:["Internet/IP","GPRS/4G","Aplicativo","Central de monitoramento","Notificação de disparo"],
+infraChecks:["Racks organizados","Switches funcionando","Patch cords/conectores verificados","Cabeamento verificado","Fontes de alimentação verificadas","Nobreak funcionando","Baterias verificadas","Tomadas/alimentação verificadas","Equipamentos sem aquecimento anormal","Equipamentos identificados","Rede de comunicação funcionando"],
+repairResults:["Equipamento normalizado","Sistema normalizado","Funcionamento parcial","Necessário retorno","Necessário orçamento","Necessária substituição de equipamento"],
+finalCondition:["Sistema funcionando normalmente","Sistema funcionando parcialmente","Equipamento permanece com falha","Necessário substituição de equipamento","Necessário novo atendimento","Aguardando aprovação de orçamento"]
+};
+function populate(){
+for(const [id,arr] of Object.entries(lists)){document.getElementById(id).innerHTML=arr.map((x,i)=>`<label><input type="checkbox" data-group="${id}" value="${esc(x)}"> ${esc(x)}</label>`).join("")}
+}
+function esc(s){return s.replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;")}
+function val(id){return document.getElementById(id)?.value||""}
+function set(id,v){if(document.getElementById(id))document.getElementById(id).value=v||""}
+function checks(group){return [...document.querySelectorAll(`input[data-group="${group}"]:checked`)].map(x=>x.value)}
+function today(){return new Date().toISOString().slice(0,10)}
+function nextNumber(){let n=Number(localStorage.getItem("osNext")||"1");localStorage.setItem("osNext",n+1);return String(n).padStart(6,"0")}
+function newOS(){
+document.getElementById("osForm").reset();set("osNumber",nextNumber());set("osDate",today());set("visitDate",today());set("clientSignDate",today());set("techSignDate",today());set("closedDate",today());document.getElementById("materials").innerHTML="";for(let i=0;i<3;i++)addMaterial();clearCanvas("clientCanvas");clearCanvas("techCanvas");document.getElementById("photoGrid").innerHTML="";window.scrollTo({top:0,behavior:"smooth"});toast("Nova OS criada")}
+function addMaterial(data={}){const d=document.createElement("div");d.className="grid material";d.style.marginBottom="8px";d.innerHTML=`<div class="col-8"><input class="matDesc" placeholder="Descrição" value="${esc(data.desc||"")}"></div><div class="col-3"><input class="matQty" type="number" min="0" placeholder="Quantidade" value="${data.qty||""}"></div><div class="col-1"><button type="button" class="danger" onclick="this.parentElement.parentElement.remove()">✕</button></div>`;document.getElementById("materials").appendChild(d)}
+function setupCanvas(id){const c=document.getElementById(id),ctx=c.getContext("2d");let drawing=false,last={x:0,y:0};function pos(e){const r=c.getBoundingClientRect();const p=e.touches?e.touches[0]:e;return{x:(p.clientX-r.left)*c.width/r.width,y:(p.clientY-r.top)*c.height/r.height}}function down(e){drawing=true;last=pos(e);e.preventDefault()}function move(e){if(!drawing)return;const p=pos(e);ctx.beginPath();ctx.moveTo(last.x,last.y);ctx.lineTo(p.x,p.y);ctx.strokeStyle="#111827";ctx.lineWidth=2.5;ctx.lineCap="round";ctx.stroke();last=p;e.preventDefault()}function up(){drawing=false}c.addEventListener("mousedown",down);c.addEventListener("mousemove",move);window.addEventListener("mouseup",up);c.addEventListener("touchstart",down,{passive:false});c.addEventListener("touchmove",move,{passive:false});c.addEventListener("touchend",up);resizeCanvas(c,ctx)}
+function resizeCanvas(c,ctx){const r=c.getBoundingClientRect(),ratio=Math.max(devicePixelRatio||1,1);c.width=r.width*ratio;c.height=180*ratio;ctx.scale(ratio,ratio)}
+function clearCanvas(id){const c=document.getElementById(id);if(!c)return;const ctx=c.getContext("2d");ctx.clearRect(0,0,c.width,c.height)}
+function toast(t){const e=document.getElementById("toast");e.textContent=t;e.style.display="block";setTimeout(()=>e.style.display="none",1800)}
+function collect(){
+const materials=[...document.querySelectorAll(".material")].map(r=>({desc:r.querySelector(".matDesc").value,qty:r.querySelector(".matQty").value})).filter(x=>x.desc||x.qty);
+return {osNumber:val("osNumber"),osDate:val("osDate"),visitDate:val("visitDate"),status:val("status"),serviceType:val("serviceType"),priority:val("priority"),client:val("client"),document:val("document"),address:val("address"),phone:val("phone"),responsible:val("responsible"),technician:val("technician"),arrival:val("arrival"),departure:val("departure"),request:val("request"),systems:checks("systems"),otherSystem:val("otherSystem"),cameraQty:val("cameraQty"),cameraIssues:val("cameraIssues"),cftvObs:val("cftvObs"),accessFault:val("accessFault"),accessObs:val("accessObs"),fenceIssues:val("fenceIssues"),fenceObs:val("fenceObs"),alarmIssues:val("alarmIssues"),alarmObs:val("alarmObs"),infraIssues:val("infraIssues"),problem:val("problem"),diagnosis:val("diagnosis"),cause:val("cause"),serviceDone:val("serviceDone"),replaced:val("replaced"),repairTest:val("repairTest"),repairResults:checks("repairResults"),materials,photosBefore:val("photosBefore"),photosAfter:val("photosAfter"),photos:window.currentPhotos||[],pending:val("pending"),recommendations:val("recommendations"),extraQuote:val("extraQuote"),deadline:val("deadline"),quoteDescription:val("quoteDescription"),finalCondition:checks("finalCondition"),finalObs:val("finalObs"),clientSignName:val("clientSignName"),clientRole:val("clientRole"),clientSignDate:val("clientSignDate"),clientSignature:document.getElementById("clientCanvas").toDataURL("image/png"),techSignName:val("techSignName"),techSignDate:val("techSignDate"),techSignature:document.getElementById("techCanvas").toDataURL("image/png"),generalNote:val("generalNote"),closedDate:val("closedDate"),closedTime:val("closedTime"),cftvChecks:checks("cftvChecks"),accessEquip:checks("accessEquip"),accessTests:checks("accessTests"),fenceChecks:checks("fenceChecks"),alarmCentral:checks("alarmCentral"),alarmSensors:checks("alarmSensors"),alarmComm:checks("alarmComm"),infraChecks:checks("infraChecks")};
+return {osNumber:val("osNumber"),osDate:val("osDate"),visitDate:val("visitDate"),status:val("status"),serviceType:val("serviceType"),priority:val("priority"),client:val("client"),document:val("document"),address:val("address"),phone:val("phone"),responsible:val("responsible"),technician:val("technician"),arrival:val("arrival"),departure:val("departure"),request:val("request"),systems:[...document.querySelectorAll("#systems input:checked")].map(x=>x.value),otherSystem:val("otherSystem"),cameraQty:val("cameraQty"),cameraIssues:val("cameraIssues"),cftvObs:val("cftvObs"),accessFault:val("accessFault"),accessObs:val("accessObs"),fenceIssues:val("fenceIssues"),fenceObs:val("fenceObs"),alarmIssues:val("alarmIssues"),alarmObs:val("alarmObs"),infraIssues:val("infraIssues"),problem:val("problem"),diagnosis:val("diagnosis"),cause:val("cause"),serviceDone:val("serviceDone"),replaced:val("replaced"),repairTest:val("repairTest"),repairResults:checks("repairResults"),materials,photosBefore:val("photosBefore"),photosAfter:val("photosAfter"),photos:window.currentPhotos||[],pending:val("pending"),recommendations:val("recommendations"),extraQuote:val("extraQuote"),deadline:val("deadline"),quoteDescription:val("quoteDescription"),finalCondition:checks("finalCondition"),finalObs:val("finalObs"),clientSignName:val("clientSignName"),clientRole:val("clientRole"),clientSignDate:val("clientSignDate"),clientSignature:document.getElementById("clientCanvas").toDataURL("image/png"),techSignName:val("techSignName"),techSignDate:val("techSignDate"),techSignature:document.getElementById("techCanvas").toDataURL("image/png"),generalNote:val("generalNote"),closedDate:val("closedDate"),closedTime:val("closedTime"),cftvChecks:checks("cftvChecks"),accessEquip:checks("accessEquip"),accessTests:checks("accessTests"),fenceChecks:checks("fenceChecks"),alarmCentral:checks("alarmCentral"),alarmSensors:checks("alarmSensors"),alarmComm:checks("alarmComm"),infraChecks:checks("infraChecks")};
+}
+function saveOS(){
+const d=collect();let arr=JSON.parse(localStorage.getItem("osList")||"[]");arr=arr.filter(x=>x.osNumber!==d.osNumber);arr.push(d);localStorage.setItem("osList",JSON.stringify(arr));toast("OS salva com sucesso")}
+function renderHistory(){
+const q=val("searchHistory").toLowerCase();const arr=JSON.parse(localStorage.getItem("osList")||"[]").filter(x=>JSON.stringify(x).toLowerCase().includes(q)).sort((a,b)=>b.osNumber.localeCompare(a.osNumber));document.getElementById("history").innerHTML=arr.length?arr.map(x=>`<div class="history-item"><div><b>OS ${x.osNumber}</b><br>${esc(x.client||"Sem cliente")}<br><span class="small">${x.osDate||""} • ${esc(x.status||"")}</span></div><div><button onclick="loadOS('${x.osNumber}')">Abrir</button> <button class="ok" onclick="loadOS('${x.osNumber}');setTimeout(generatePDF,300)">PDF</button></div></div>`).join(""):"Nenhuma OS encontrada."}
+function showTab(t){document.getElementById("formTab").classList.toggle("hidden",t!=="form");document.getElementById("historyTab").classList.toggle("hidden",t!=="history");if(t==="history")renderHistory()}
+function loadOS(num){const d=JSON.parse(localStorage.getItem("osList")||"[]").find(x=>x.osNumber===num);if(!d)return;set("osNumber",d.osNumber);Object.keys(d).forEach(k=>{if(document.getElementById(k)&&typeof d[k]==="string")set(k,d[k])});for(const g of Object.keys(lists)){document.querySelectorAll(`input[data-group="${g}"]`).forEach(c=>c.checked=(d[g]||[]).includes(c.value))}document.querySelectorAll('#systems input').forEach(c=>c.checked=(d.systems||[]).includes(c.value));document.getElementById("materials").innerHTML="";(d.materials||[]).forEach(addMaterial);window.currentPhotos=d.photos||[];renderPhotos();showTab("form");toast("OS carregada")}
+document.getElementById("photoInput").addEventListener("change",async e=>{window.currentPhotos=window.currentPhotos||[];for(const f of e.target.files){const r=new FileReader();r.onload=()=>{window.currentPhotos.push(r.result);renderPhotos()};r.readAsDataURL(f)}});
+function renderPhotos(){document.getElementById("photoGrid").innerHTML=(window.currentPhotos||[]).map((p,i)=>`<div class="photo-card"><img src="${p}"><button type="button" class="danger" onclick="currentPhotos.splice(${i},1);renderPhotos()">Excluir</button></div>`).join("")}
+function line(doc,label,value,x,y,w){doc.setFontSize(8);doc.setFont(undefined,"bold");doc.text(label,x,y);doc.setFont(undefined,"normal");let lines=doc.splitTextToSize(value||"—",w);doc.text(lines,x,y+4);return y+4+lines.length*3.8}
+function section(doc,title,y){if(y>275){doc.addPage();y=15}doc.setFillColor(11,18,32);doc.setTextColor(255);doc.rect(10,y-5,190,7,"F");doc.setFontSize(10);doc.setFont(undefined,"bold");doc.text(title,12,y);doc.setTextColor(0);return y+7}
+async function generatePDF(){
+saveOS();const d=collect();const {jsPDF}=window.jspdf;const doc=new jsPDF({unit:"mm",format:"a4"});let y=16;
+doc.setFontSize(15);doc.setFont(undefined,"bold");doc.text("ORDEM DE SERVIÇO – MANUTENÇÃO PREVENTIVA E CORRETIVA",10,y);y+=8;doc.setFontSize(9);doc.setFont(undefined,"normal");doc.text(`OS Nº ${d.osNumber}   Data: ${d.osDate}   Visita: ${d.visitDate}   Status: ${d.status}`,10,y);y+=7;
+y=section(doc,"DADOS DO CLIENTE",y);y=line(doc,"Cliente/Condomínio",d.client,10,y,90);y=line(doc,"CNPJ/CPF",d.document,105,y-4,90);y=line(doc,"Endereço",d.address,10,y,120);y=line(doc,"Telefone",d.phone,135,y-4,55);y=line(doc,"Responsável",d.responsible,10,y,90);y=line(doc,"Técnico responsável",d.technician,105,y-4,90);y=line(doc,"Tipo / Prioridade",d.serviceType+" / "+d.priority,10,y,90);
+y=section(doc,"SOLICITAÇÃO / MOTIVO",y+3);y=line(doc,"Descrição",d.request,10,y,190);y=line(doc,"Sistemas envolvidos",d.systems.join(", ")+(d.otherSystem?" / "+d.otherSystem:""),10,y+2,190);
+const groups=[["CFTV",d.cftvChecks],["CONTROLE DE ACESSO – EQUIPAMENTOS",d.accessEquip],["CONTROLE DE ACESSO – TESTES",d.accessTests],["CERCA ELÉTRICA",d.fenceChecks],["ALARME – CENTRAL",d.alarmCentral],["ALARME – SENSORES",d.alarmSensors],["ALARME – COMUNICAÇÃO",d.alarmComm],["INFRAESTRUTURA / REDE / ALIMENTAÇÃO",d.infraChecks]];
+for(const [t,a] of groups){y=section(doc,t,y+3);y=line(doc,"Itens verificados",a.length?a.map(v=>"✓ "+v).join(" | "):"Nenhum item marcado",10,y,190);if(y>270){doc.addPage();y=15}}
+y=section(doc,"MANUTENÇÃO CORRETIVA",y+3);for(const [l,k] of [["Problema relatado","problem"],["Diagnóstico técnico","diagnosis"],["Causa identificada","cause"],["Serviço executado","serviceDone"],["Equipamento/peça substituída","replaced"],["Teste após reparo","repairTest"]])y=line(doc,l,d[k],10,y,190);
+y=line(doc,"Resultado",d.repairResults.join(", "),10,y+2,190);
+y=section(doc,"MATERIAIS / PEÇAS",y+3);(d.materials||[]).forEach((m,i)=>{y=line(doc,`${i+1}. ${m.desc}`,String(m.qty||""),10,y,190)});
+y=section(doc,"PENDÊNCIAS / RECOMENDAÇÕES",y+3);y=line(doc,"Pendências",d.pending,10,y,190);y=line(doc,"Recomendações",d.recommendations,10,y);y=line(doc,"Orçamento adicional",d.extraQuote+" — "+d.quoteDescription,10,y);y=line(doc,"Prazo recomendado",d.deadline,10,y);
+y=section(doc,"CONDIÇÃO FINAL",y+3);y=line(doc,"Condição",d.finalCondition.join(", "),10,y,190);y=line(doc,"Observações finais",d.finalObs,10,y);
+if(y>220){doc.addPage();y=15}y=section(doc,"ACEITE DO SERVIÇO",y+4);y=line(doc,"Responsável pelo cliente",d.clientSignName+" — "+d.clientRole,10,y,90);y=line(doc,"Técnico responsável",d.techSignName,105,y-4,90);
+if(d.clientSignature&&d.clientSignature.length>1000)doc.addImage(d.clientSignature,"PNG",10,y+2,80,35);if(d.techSignature&&d.techSignature.length>1000)doc.addImage(d.techSignature,"PNG",110,y+2,80,35);y+=42;
+y=line(doc,"Data do aceite",d.clientSignDate,10,y,90);y=line(doc,"Data do técnico",d.techSignDate,105,y-4,90);y=section(doc,"OBSERVAÇÃO",y+4);y=line(doc,"",d.generalNote,10,y,190);y=line(doc,"OS encerrada em",d.closedDate+" às "+d.closedTime,10,y+2,190);
+doc.setFontSize(7);doc.text("Documento gerado pelo sistema de Ordem de Serviço.",10,289);doc.save(`OS-${d.osNumber}.pdf`);toast("PDF gerado")}
+populate();setupCanvas("clientCanvas");setupCanvas("techCanvas");newOS();
+</script>
+</body>
+</html>

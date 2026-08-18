@@ -1,22 +1,24 @@
-# Ordem de Serviço – Manutenção Preventiva e Corretiva
+# Controle de Atividade — Ordem de Serviço
 
-Aplicativo web/PWA para criação de Ordens de Serviço, checklists de CFTV, Controle de Acesso, Cerca Elétrica, Alarme, Infraestrutura/Rede, registro fotográfico, assinatura na tela e geração de PDF.
+Versão para PC e Android, via navegador/GitHub Pages.
 
-## Publicar no GitHub Pages
+## Funciona em
+- PC: Chrome, Edge, Opera e navegadores modernos.
+- Android: Chrome e navegadores modernos.
+- Tela sensível ao toque para assinatura do cliente/técnico.
+- Layout responsivo para celular e computador.
+- Pode ser adicionada à tela inicial do Android como aplicativo (PWA).
 
-1. Crie um repositório no GitHub.
-2. Envie `index.html`, `manifest.json` e `sw.js`.
-3. Vá em **Settings → Pages**.
-4. Em Source, selecione **Deploy from a branch**.
-5. Escolha `main` e `/root`.
-6. Salve e abra o endereço do GitHub Pages no celular.
+## Recursos
+- Cadastro de clientes
+- Seleção de cliente na OS com preenchimento automático
+- Tipo de atendimento
+- Checklists dinâmicos por sistema selecionado
+- Registro fotográfico pelo celular
+- Assinaturas
+- Geração de PDF
+- Histórico local
 
-O app usa `localStorage` do navegador para o histórico. Portanto, nesta primeira versão os dados ficam no aparelho/navegador em que foram cadastrados.
-
-## Assinatura
-
-A assinatura do cliente é feita diretamente no canvas, com dedo ou caneta, e é incorporada ao PDF.
-
-## Próxima evolução recomendada
-
-Para uso profissional com vários técnicos/celulares, adicionar banco de dados online, login, numeração centralizada, backup, fotos em armazenamento, painel administrativo e envio automático da OS assinada por WhatsApp/e-mail.
+## Publicação
+Substitua os arquivos do repositório GitHub pelo conteúdo desta pasta e mantenha o GitHub Pages em:
+main / (root).

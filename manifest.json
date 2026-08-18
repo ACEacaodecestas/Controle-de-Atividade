@@ -1,9 +1,12 @@
 {
-  "name": "Ordem de Serviço - Manutenção",
+  "name": "Controle de Atividade - Ordem de Serviço",
   "short_name": "Ordem de Serviço",
-  "start_url": ".",
+  "start_url": "./",
+  "scope": "./",
   "display": "standalone",
   "background_color": "#f3f6fa",
   "theme_color": "#0b1220",
-  "lang": "pt-BR"
+  "lang": "pt-BR",
+  "orientation": "any",
+  "icons": []
 }

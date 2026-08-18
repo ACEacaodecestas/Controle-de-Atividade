@@ -68,9 +68,7 @@ input, select, textarea { min-height: 42px; }
   nav { flex-wrap: wrap; }
 }
 
-
-#installBtn{white-space:nowrap}
-@media(max-width:600px){#installBtn{font-size:12px;padding:8px 9px!important}.top{gap:6px}}
+#installBtn{white-space:nowrap}@media(max-width:600px){#installBtn{font-size:12px;padding:8px 9px!important}.top{gap:6px}}
 </style>
 </head>
 <body>
@@ -267,65 +265,7 @@ input, select, textarea { min-height: 42px; }
 </div><div id="toast"></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script>
 
-// Instalação do aplicativo (PWA) em Android e navegadores compatíveis no PC.
-let deferredInstallPrompt = null;
-
-if ("serviceWorker" in navigator) {
-  window.addEventListener("load", () => {
-    navigator.serviceWorker.register("./sw.js")
-      .then(() => console.log("PWA: Service Worker registrado"))
-      .catch(err => console.warn("PWA Service Worker:", err));
-  });
-}
-
-window.addEventListener("beforeinstallprompt", (event) => {
-  event.preventDefault();
-  deferredInstallPrompt = event;
-  const btn = document.getElementById("installBtn");
-  if (btn) {
-    btn.style.display = "inline-block";
-    btn.textContent = "📲 Instalar aplicativo";
-  }
-});
-
-window.addEventListener("appinstalled", () => {
-  deferredInstallPrompt = null;
-  const btn = document.getElementById("installBtn");
-  if (btn) btn.style.display = "none";
-  toast("Aplicativo instalado com sucesso!");
-});
-
-async function installApp() {
-  // Chrome/Edge disponibiliza o diálogo nativo quando o PWA atende aos requisitos.
-  if (deferredInstallPrompt) {
-    deferredInstallPrompt.prompt();
-    const result = await deferredInstallPrompt.userChoice;
-    deferredInstallPrompt = null;
-    if (result && result.outcome === "accepted") {
-      toast("Instalação iniciada!");
-    }
-    return;
-  }
-
-  // Fallback para Android quando o navegador não expõe beforeinstallprompt.
-  const isAndroid = /Android/i.test(navigator.userAgent);
-  if (isAndroid) {
-    alert(
-      "Para instalar no Android:\\n\\n" +
-      "1. Toque nos três pontos ⋮ do Chrome.\\n" +
-      "2. Procure 'Instalar aplicativo' ou 'Adicionar à tela inicial'.\\n" +
-      "3. Confirme a instalação.\\n\\n" +
-      "Se 'Instalar aplicativo' não aparecer, atualize a página e tente novamente."
-    );
-  } else {
-    alert(
-      "O navegador não disponibilizou a instalação automática.\\n\\n" +
-      "No Chrome/Edge, procure o ícone de instalação na barra de endereço ou use o menu do navegador."
-    );
-  }
-}
-</script>
+<script src="app.js"></script>
 </body>
 </html>

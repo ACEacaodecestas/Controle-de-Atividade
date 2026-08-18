@@ -1,10 +1,23 @@
-# Controle de Atividade — Ordem de Serviço
+# Controle de Atividade — PWA completo
 
-Versão PC + Android com botão fixo **📲 Instalar aplicativo** no cabeçalho.
+Esta versão mantém o aplicativo web e também permite instalação como aplicativo no Android e em navegadores compatíveis no PC.
 
-O botão fica visível sempre:
-- Se o navegador disponibilizar a instalação PWA, abre o instalador nativo.
-- No Android, se o navegador não disponibilizar o prompt automático, o botão mostra o caminho pelo menu do Chrome.
-- O app precisa estar publicado em HTTPS (GitHub Pages) para a instalação PWA.
+Estrutura:
+- `index.html` — interface
+- `app.js` — lógica completa da aplicação
+- `manifest.json` — identidade e instalação PWA
+- `sw.js` — Service Worker/cache
+- `icons/` — ícones 192x192 e 512x512
 
-Substitua os arquivos do repositório GitHub por esta versão e faça o Commit changes.
+Funcionalidades preservadas:
+- Cadastro de clientes
+- Cliente selecionável na OS
+- Tipos de atendimento
+- Checklists dinâmicos por sistema
+- Fotos
+- Assinatura do cliente e técnico
+- Histórico
+- PDF
+- Botão de instalação
+
+Publique os arquivos na raiz (`main / root`) do GitHub Pages, sempre em HTTPS.

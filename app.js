@@ -201,87 +201,87 @@ setupCanvas("clientCanvas");setupCanvas("techCanvas");newOS();updateSystemCheckl
 
 
 // ================= PWA / INSTALAÇÃO =================
-const PWA_BASE = "/Controle-de-Atividade/";
 let deferredInstallPrompt = null;
-let pwaInstallEventSeen = false;
-
-function pwaButton() {
-  return document.getElementById("installBtn");
-}
 
 function isStandalone() {
   return window.matchMedia("(display-mode: standalone)").matches ||
          window.navigator.standalone === true;
 }
 
-function updateInstallButton() {
-  const btn = pwaButton();
+function installButton() {
+  return document.getElementById("installBtn");
+}
+
+function showInstallButton(show) {
+  const btn = installButton();
   if (!btn) return;
-  btn.style.display = isStandalone() ? "none" : "inline-block";
+  btn.style.display = show ? "inline-block" : "none";
 }
 
 window.addEventListener("beforeinstallprompt", (event) => {
+  // Chrome só dispara este evento quando decidiu que a PWA pode ser
+  // instalada pelo prompt programático.
   event.preventDefault();
   deferredInstallPrompt = event;
-  pwaInstallEventSeen = true;
-  updateInstallButton();
+  showInstallButton(true);
+  console.log("PWA: prompt de instalação disponível.");
 });
 
 window.addEventListener("appinstalled", () => {
   deferredInstallPrompt = null;
-  updateInstallButton();
-  if (typeof toast === "function") toast("Aplicativo instalado com sucesso!");
+  showInstallButton(false);
+  if (typeof toast === "function") toast("Ordem de Serviço instalada!");
 });
-
-async function registerPWA() {
-  if (!("serviceWorker" in navigator)) {
-    console.error("Este navegador não suporta Service Worker.");
-    return;
-  }
-
-  try {
-    // Remove workers antigos/que falharam em versões anteriores.
-    const regs = await navigator.serviceWorker.getRegistrations();
-    for (const reg of regs) {
-      if (reg.scope.includes(PWA_BASE)) {
-        await reg.unregister();
-      }
-    }
-
-    // Registro explícito no caminho do GitHub Pages.
-    const registration = await navigator.serviceWorker.register(
-      PWA_BASE + "sw.js",
-      { scope: PWA_BASE, updateViaCache: "none" }
-    );
-
-    await registration.update();
-    await navigator.serviceWorker.ready;
-
-    console.log("Service Worker PWA ativo:", registration.scope);
-  } catch (error) {
-    console.error("ERRO AO REGISTRAR SERVICE WORKER:", error);
-    window.pwaRegistrationError = String(error && error.message ? error.message : error);
-  }
-
-  updateInstallButton();
-}
 
 async function installApp() {
   if (deferredInstallPrompt) {
     deferredInstallPrompt.prompt();
-    const choice = await deferredInstallPrompt.userChoice;
+    const result = await deferredInstallPrompt.userChoice;
     deferredInstallPrompt = null;
 
-    if (choice && choice.outcome === "accepted" && typeof toast === "function") {
-      toast("Instalação iniciada!");
+    if (result && result.outcome === "accepted") {
+      showInstallButton(false);
     }
     return;
   }
 
+  // O Chrome não fornece um método JavaScript para obrigar o prompt.
+  // Quando o evento não está disponível, mostramos o caminho nativo.
   alert(
-    "O Chrome ainda não disponibilizou o instalador PWA.\n\n" +
-    "Toque em 🔧 Diagnóstico PWA para verificar o Service Worker."
+    "O Chrome ainda não liberou o botão automático nesta visita.\n\n" +
+    "Faça assim no Chrome Android:\n\n" +
+    "1. Toque nos três pontos ⋮\n" +
+    "2. Escolha 'Instalar aplicativo' (ou 'Adicionar à tela inicial')\n" +
+    "3. Toque em 'Instalar'\n\n" +
+    "Se aparecer 'Instalar aplicativo', será instalado como PWA."
   );
+}
+
+async function registerPWA() {
+  if (!("serviceWorker" in navigator)) return;
+
+  try {
+    const base = "/Controle-de-Atividade/";
+    const regs = await navigator.serviceWorker.getRegistrations();
+
+    // Remove apenas registros antigos do mesmo projeto.
+    for (const reg of regs) {
+      if (reg.scope.includes(base)) {
+        await reg.unregister();
+      }
+    }
+
+    const reg = await navigator.serviceWorker.register(base + "sw.js", {
+      scope: base,
+      updateViaCache: "none"
+    });
+
+    await reg.update();
+    await navigator.serviceWorker.ready;
+    console.log("PWA Service Worker ativo:", reg.scope);
+  } catch (error) {
+    console.error("PWA Service Worker:", error);
+  }
 }
 
 async function diagnosePWA() {
@@ -290,63 +290,49 @@ async function diagnosePWA() {
     results.push((ok ? "✅ " : "❌ ") + name + ": " + detail);
 
   add("HTTPS", location.protocol === "https:", location.protocol);
-  add("Manifest link",
-      !!document.querySelector('link[rel="manifest"]'),
-      document.querySelector('link[rel="manifest"]')?.getAttribute("href") || "não encontrado");
+
+  const manifestLink = document.querySelector('link[rel="manifest"]');
+  add("Manifest link", !!manifestLink,
+      manifestLink?.getAttribute("href") || "não encontrado");
 
   let manifest = null;
   try {
-    const r = await fetch(PWA_BASE + "manifest.json", {cache:"no-store"});
+    const r = await fetch("/Controle-de-Atividade/manifest.json", {cache:"no-store"});
     manifest = r.ok ? await r.json() : null;
     add("Manifest publicado", r.ok, r.status + " " + r.statusText);
-  } catch (e) {
+  } catch {
     add("Manifest publicado", false, "erro ao carregar");
   }
 
   if (manifest) {
     add("display standalone", manifest.display === "standalone", manifest.display || "ausente");
-    add("start_url", manifest.start_url === PWA_BASE, manifest.start_url || "ausente");
-    add("scope", manifest.scope === PWA_BASE, manifest.scope || "ausente");
-    add("ícone 192", Array.isArray(manifest.icons) &&
-        manifest.icons.some(i => String(i.src).includes("192")), "verificado");
-    add("ícone 512", Array.isArray(manifest.icons) &&
-        manifest.icons.some(i => String(i.src).includes("512")), "verificado");
+    add("start_url", manifest.start_url === "/Controle-de-Atividade/",
+        manifest.start_url || "ausente");
+    add("scope", manifest.scope === "/Controle-de-Atividade/",
+        manifest.scope || "ausente");
+    add("ícone 192", manifest.icons?.some(i => i.sizes === "192x192"), "verificado");
+    add("ícone 512", manifest.icons?.some(i => i.sizes === "512x512"), "verificado");
   }
 
-  if ("serviceWorker" in navigator) {
-    try {
-      const regs = await navigator.serviceWorker.getRegistrations();
-      const reg = regs.find(r => r.scope.includes(PWA_BASE));
-      add("Service Worker registrado", !!reg, reg ? reg.scope : "não encontrado");
-      add("Service Worker controlando", !!navigator.serviceWorker.controller,
-          navigator.serviceWorker.controller ? "sim" : "não");
-      if (window.pwaRegistrationError) {
-        add("Erro de registro", false, window.pwaRegistrationError);
-      }
-    } catch (e) {
-      add("Service Worker", false, String(e));
-    }
-  } else {
-    add("Service Worker", false, "navegador não suporta");
+  try {
+    const regs = await navigator.serviceWorker.getRegistrations();
+    const reg = regs.find(r => r.scope.includes("/Controle-de-Atividade/"));
+    add("Service Worker registrado", !!reg, reg ? reg.scope : "não encontrado");
+    add("Service Worker controlando", !!navigator.serviceWorker.controller,
+        navigator.serviceWorker.controller ? "sim" : "não");
+  } catch {
+    add("Service Worker", false, "erro ao consultar");
   }
 
-  add("beforeinstallprompt",
-      !!deferredInstallPrompt || pwaInstallEventSeen,
+  add("beforeinstallprompt", !!deferredInstallPrompt,
       deferredInstallPrompt ? "disponível" : "não fornecido pelo Chrome");
-    add("offline shell", "serviceWorker" in navigator,
-      "Service Worker com cache do app configurado");
-
   add("Modo aplicativo", isStandalone(),
       isStandalone() ? "standalone" : "navegador");
 
-  alert(
-    "DIAGNÓSTICO PWA\n\n" +
-    results.join("\n") +
-    "\n\nEnvie um print desta tela."
-  );
+  alert("DIAGNÓSTICO PWA\n\n" + results.join("\n"));
 }
 
 window.addEventListener("load", () => {
   registerPWA();
-  updateInstallButton();
+  if (isStandalone()) showInstallButton(false);
 });

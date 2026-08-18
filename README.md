@@ -1,9 +1,8 @@
-# Ordem de Serviço — PWA
+# FORTAL TECH — Ordem de Serviço
 
-Esta versão mantém o aplicativo web e usa o mecanismo oficial de instalação do Chrome.
+Versão web/PWA do sistema de Ordem de Serviço.
 
-Quando o Chrome disponibilizar `beforeinstallprompt`, o botão **Instalar aplicativo** abre a caixa nativa do Android.
-
-Se o Chrome não disponibilizar o evento, o botão mostra o caminho pelo menu do Chrome. Isso é uma limitação deliberada do navegador: JavaScript não pode fabricar a caixa nativa de instalação.
-
-Publique todos os arquivos na raiz do repositório, mantendo `icons/`.
+- Nome do aplicativo: FORTAL TECH
+- Ícone: logomarca FORTAL TECH fornecida pelo usuário
+- Continua funcionando no navegador e como PWA instalada no Android.
+- O botão de diagnóstico PWA foi removido da interface.

@@ -1,7 +1,7 @@
 {
-  "name": "Ordem de Serviço",
-  "short_name": "Ordem de Serviço",
-  "description": "Sistema de Ordem de Serviço para manutenção preventiva e corretiva",
+  "name": "FORTAL TECH",
+  "short_name": "FORTAL TECH",
+  "description": "Sistema de Ordem de Serviço — FORTAL TECH",
   "id": "/Controle-de-Atividade/",
   "start_url": "/Controle-de-Atividade/",
   "scope": "/Controle-de-Atividade/",

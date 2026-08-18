@@ -166,7 +166,7 @@ function line(doc,label,value,x,y,w){doc.setFontSize(8);doc.setFont(undefined,"b
 function section(doc,title,y){if(y>275){doc.addPage();y=15}doc.setFillColor(11,18,32);doc.setTextColor(255);doc.rect(10,y-5,190,7,"F");doc.setFontSize(10);doc.setFont(undefined,"bold");doc.text(title,12,y);doc.setTextColor(0);return y+7}
 async function generatePDF(){
 saveOS();const d=collect();const {jsPDF}=window.jspdf;const doc=new jsPDF({unit:"mm",format:"a4"});let y=16;
-doc.setFontSize(15);doc.setFont(undefined,"bold");doc.text("ORDEM DE SERVIÇO – MANUTENÇÃO PREVENTIVA E CORRETIVA",10,y);y+=8;doc.setFontSize(9);doc.setFont(undefined,"normal");doc.text(`OS Nº ${d.osNumber}   Data: ${d.osDate}   Visita: ${d.visitDate}   Status: ${d.status}`,10,y);y+=7;
+doc.setFontSize(15);doc.setFont(undefined,"bold");doc.text("FORTAL TECH – MANUTENÇÃO PREVENTIVA E CORRETIVA",10,y);y+=8;doc.setFontSize(9);doc.setFont(undefined,"normal");doc.text(`OS Nº ${d.osNumber}   Data: ${d.osDate}   Visita: ${d.visitDate}   Status: ${d.status}`,10,y);y+=7;
 y=section(doc,"DADOS DO CLIENTE",y);y=line(doc,"Cliente/Condomínio",d.client,10,y,90);y=line(doc,"CNPJ/CPF",d.document,105,y-4,90);y=line(doc,"Endereço",d.address,10,y,120);y=line(doc,"Telefone",d.phone,135,y-4,55);y=line(doc,"Responsável",d.responsible,10,y,90);y=line(doc,"Técnico responsável",d.technician,105,y-4,90);y=line(doc,"Tipo / Prioridade",d.serviceType+" / "+d.priority,10,y,90);
 y=section(doc,"SOLICITAÇÃO / MOTIVO",y+3);y=line(doc,"Descrição",d.request,10,y,190);y=line(doc,"Sistemas envolvidos",d.systems.join(", ")+(d.otherSystem?" / "+d.otherSystem:""),10,y+2,190);
 const groups=[];
@@ -192,7 +192,7 @@ y=section(doc,"CONDIÇÃO FINAL",y+3);y=line(doc,"Condição",d.finalCondition.j
 if(y>220){doc.addPage();y=15}y=section(doc,"ACEITE DO SERVIÇO",y+4);y=line(doc,"Responsável pelo cliente",d.clientSignName+" — "+d.clientRole,10,y,90);y=line(doc,"Técnico responsável",d.techSignName,105,y-4,90);
 if(d.clientSignature&&d.clientSignature.length>1000)doc.addImage(d.clientSignature,"PNG",10,y+2,80,35);if(d.techSignature&&d.techSignature.length>1000)doc.addImage(d.techSignature,"PNG",110,y+2,80,35);y+=42;
 y=line(doc,"Data do aceite",d.clientSignDate,10,y,90);y=line(doc,"Data do técnico",d.techSignDate,105,y-4,90);y=section(doc,"OBSERVAÇÃO",y+4);y=line(doc,"",d.generalNote,10,y,190);y=line(doc,"OS encerrada em",d.closedDate+" às "+d.closedTime,10,y+2,190);
-doc.setFontSize(7);doc.text("Documento gerado pelo sistema de Ordem de Serviço.",10,289);doc.save(`OS-${d.osNumber}.pdf`);toast("PDF gerado")}
+doc.setFontSize(7);doc.text("Documento gerado pelo sistema de FORTAL TECH.",10,289);doc.save(`OS-${d.osNumber}.pdf`);toast("PDF gerado")}
 populate();
 document.querySelectorAll("#systems input[data-system]").forEach(cb=>cb.addEventListener("change",updateSystemChecklists));
 document.getElementById("serviceType").addEventListener("change",updateServiceTypeSection);
@@ -230,7 +230,7 @@ window.addEventListener("beforeinstallprompt", (event) => {
 window.addEventListener("appinstalled", () => {
   deferredInstallPrompt = null;
   showInstallButton(false);
-  if (typeof toast === "function") toast("Ordem de Serviço instalada!");
+  if (typeof toast === "function") toast("FORTAL TECH instalada!");
 });
 
 async function installApp() {

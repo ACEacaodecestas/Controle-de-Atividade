@@ -82,13 +82,84 @@ function saveOS(){
 const d=collect();let arr=JSON.parse(localStorage.getItem("osList")||"[]");arr=arr.filter(x=>x.osNumber!==d.osNumber);arr.push(d);localStorage.setItem("osList",JSON.stringify(arr));toast("OS salva com sucesso")}
 function renderHistory(){
 const q=val("searchHistory").toLowerCase();const arr=JSON.parse(localStorage.getItem("osList")||"[]").filter(x=>JSON.stringify(x).toLowerCase().includes(q)).sort((a,b)=>b.osNumber.localeCompare(a.osNumber));document.getElementById("history").innerHTML=arr.length?arr.map(x=>`<div class="history-item"><div><b>OS ${x.osNumber}</b><br>${esc(x.client||"Sem cliente")}<br><span class="small">${x.osDate||""} • ${esc(x.status||"")}</span></div><div><button onclick="loadOS('${x.osNumber}')">Abrir</button> <button class="ok" onclick="loadOS('${x.osNumber}');setTimeout(generatePDF,300)">PDF</button></div></div>`).join(""):"Nenhuma OS encontrada."}
+function getQuotes(){return JSON.parse(localStorage.getItem("quotesList")||"[]")}
+function setQuotes(arr){localStorage.setItem("quotesList",JSON.stringify(arr))}
+function nextQuoteNumber(){let n=Number(localStorage.getItem("quoteNext")||"1");localStorage.setItem("quoteNext",n+1);return "ORC-"+String(n).padStart(6,"0")}
+function populateQuoteClientSelect(){
+  const sel=document.getElementById("quoteClient"); if(!sel)return;
+  const current=sel.value;
+  const clients=getClients();
+  sel.innerHTML='<option value="">— Selecione um cliente cadastrado —</option>'+clients.map(c=>`<option value="${esc(c.id)}">${esc(c.name)}</option>`).join("");
+  if(current && clients.some(c=>c.id===current))sel.value=current;
+}
+function selectClientForQuote(){
+  const c=getClients().find(x=>x.id===val("quoteClient"));
+  if(!c){set("quoteDocument","");set("quotePhone","");set("quoteAddress","");return}
+  set("quoteDocument",c.document);set("quotePhone",c.phone);set("quoteAddress",c.address);
+}
+function addQuoteItem(data={}){
+  const tbody=document.getElementById("quoteItems"); if(!tbody)return;
+  const tr=document.createElement("tr"); tr.className="quote-item";
+  tr.innerHTML=`<td><input class="quoteDesc" placeholder="Descrição do item ou serviço" value="${esc(data.desc||"")}"></td><td style="width:90px"><input class="quoteQty" type="number" min="0" step="0.01" value="${data.qty??1}" oninput="updateQuoteTotals()"></td><td style="width:160px"><input class="quoteUnit" type="number" min="0" step="0.01" placeholder="0,00" value="${data.unit??""}" oninput="updateQuoteTotals()"></td><td style="width:140px"><strong class="quoteLineTotal">R$ 0,00</strong></td><td style="width:55px"><button type="button" class="danger quote-remove" onclick="this.closest('tr').remove();updateQuoteTotals()">✕</button></td>`;
+  tbody.appendChild(tr);updateQuoteTotals();
+}
+function money(v){return Number(v||0).toLocaleString("pt-BR",{style:"currency",currency:"BRL"})}
+function updateQuoteTotals(){
+  let total=0;
+  document.querySelectorAll(".quote-item").forEach(row=>{
+    const qty=Number(row.querySelector(".quoteQty")?.value||0);const unit=Number(row.querySelector(".quoteUnit")?.value||0);const line=qty*unit;total+=line;
+    const el=row.querySelector(".quoteLineTotal");if(el)el.textContent=money(line);
+  });
+  const g=document.getElementById("quoteGrandTotal");if(g)g.textContent=money(total);
+  return total;
+}
+function collectQuote(){
+  const client=getClients().find(c=>c.id===val("quoteClient"));
+  const items=[...document.querySelectorAll(".quote-item")].map(r=>({desc:r.querySelector(".quoteDesc")?.value.trim()||"",qty:Number(r.querySelector(".quoteQty")?.value||0),unit:Number(r.querySelector(".quoteUnit")?.value||0)})).filter(x=>x.desc||x.qty||x.unit);
+  return {quoteNumber:val("quoteNumber"),date:val("quoteDate"),clientId:client?.id||"",client:client?.name||"",document:client?.document||"",phone:client?.phone||"",address:client?.address||"",systems:checks("quoteSystems"),otherSystem:val("quoteOtherSystem"),description:val("quoteDescription"),items,validity:val("quoteValidity"),deadline:val("quoteDeadline"),payment:val("quotePayment"),notes:val("quoteNotes"),total:updateQuoteTotals()};
+}
+function newQuote(){
+  ["quoteClient","quoteDocument","quotePhone","quoteAddress","quoteOtherSystem","quoteDescription","quoteDeadline","quotePayment","quoteNotes"].forEach(id=>set(id,""));
+  set("quoteNumber",nextQuoteNumber());set("quoteDate",today());set("quoteValidity","10");
+  document.querySelectorAll('#quoteSystems input[type="checkbox"]').forEach(x=>x.checked=false);
+  document.getElementById("quoteItems").innerHTML="";for(let i=0;i<3;i++)addQuoteItem();
+  updateQuoteTotals();window.scrollTo({top:0,behavior:"smooth"});toast("Novo orçamento criado");
+}
+function saveQuote(){
+  const d=collectQuote();
+  if(!d.client){toast("Selecione um cliente cadastrado");return}
+  if(!d.items.length){toast("Adicione pelo menos um item ao orçamento");return}
+  let arr=getQuotes();arr=arr.filter(x=>x.quoteNumber!==d.quoteNumber);arr.push(d);setQuotes(arr);toast("Orçamento salvo com sucesso");
+}
+function generateQuotePDF(){
+  const d=collectQuote();
+  if(!d.client){toast("Selecione um cliente cadastrado");return}
+  if(!d.items.length){toast("Adicione pelo menos um item ao orçamento");return}
+  saveQuote();
+  const {jsPDF}=window.jspdf;const doc=new jsPDF({unit:"mm",format:"a4"});let y=16;
+  doc.setFillColor(11,18,32);doc.rect(0,0,210,30,"F");doc.setTextColor(255);doc.setFontSize(17);doc.setFont(undefined,"bold");doc.text("FORTAL TECH",10,12);doc.setFontSize(9);doc.setFont(undefined,"normal");doc.text("SEGURANÇA ELETRÔNICA & ELÉTRICA",10,19);doc.text("ORÇAMENTO",154,15);doc.text(`Nº ${d.quoteNumber}`,154,21);doc.setTextColor(0);y=39;
+  const sec=(title)=>{if(y>275){doc.addPage();y=15}doc.setFillColor(11,18,32);doc.setTextColor(255);doc.rect(10,y-5,190,7,"F");doc.setFontSize(10);doc.setFont(undefined,"bold");doc.text(title,12,y);doc.setTextColor(0);y+=8};
+  const field=(label,value,w=190)=>{doc.setFontSize(8);doc.setFont(undefined,"bold");doc.text(label,10,y);doc.setFont(undefined,"normal");const lines=doc.splitTextToSize(value||"—",w);doc.text(lines,10,y+4);y+=4+lines.length*4.2};
+  sec("DADOS DO CLIENTE");field("Cliente / Condomínio",d.client);field("CNPJ/CPF",d.document);field("Endereço",d.address);field("Telefone",d.phone);field("Data do orçamento",d.date);
+  sec("SISTEMAS ENVOLVIDOS");field("Sistemas",d.systems.join(", ")+(d.otherSystem?" / "+d.otherSystem:""));
+  sec("DESCRIÇÃO DO SERVIÇO / ESCOPO");field("Descrição",d.description);
+  sec("ITENS DO ORÇAMENTO");
+  const startY=y;doc.setFontSize(8);doc.setFont(undefined,"bold");doc.text("Item / Descrição",10,y);doc.text("Qtd.",112,y);doc.text("Valor unit.",135,y);doc.text("Total",171,y);y+=5;doc.setFont(undefined,"normal");
+  d.items.forEach((it,i)=>{if(y>270){doc.addPage();y=15;doc.setFontSize(8)}const lineTotal=it.qty*it.unit;const descLines=doc.splitTextToSize(`${i+1}. ${it.desc}`,96);doc.text(descLines,10,y);doc.text(String(it.qty),112,y);doc.text(money(it.unit),135,y);doc.text(money(lineTotal),171,y);y+=Math.max(5,descLines.length*4);});
+  doc.setDrawColor(180);doc.line(10,y,200,y);y+=7;doc.setFontSize(12);doc.setFont(undefined,"bold");doc.text("TOTAL DO ORÇAMENTO",120,y);doc.text(money(d.total),171,y);y+=10;
+  sec("CONDIÇÕES DO ORÇAMENTO");field("Validade",`${d.validity||"—"} dias`);field("Prazo de execução",d.deadline);field("Forma de pagamento",d.payment);field("Observações / condições",d.notes);
+  doc.setFontSize(7);doc.setFont(undefined,"normal");doc.text("Orçamento emitido pelo sistema FORTAL TECH.",10,289);doc.save(`ORCAMENTO-${d.quoteNumber}.pdf`);toast("PDF do orçamento gerado");
+}
+
 function showTab(t){
 document.getElementById("formTab").classList.toggle("hidden",t!=="form");
 document.getElementById("clientsTab").classList.toggle("hidden",t!=="clients");
 document.getElementById("historyTab").classList.toggle("hidden",t!=="history");
+document.getElementById("quoteTab").classList.toggle("hidden",t!=="quote");
 if(t==="history")renderHistory();
-if(t==="clients")renderClients();
-if(t==="form")populateClientSelect();
+if(t==="clients"){renderClients();}
+if(t==="form"){populateClientSelect();}
+if(t==="quote"){populateQuoteClientSelect();if(!val("quoteNumber"))newQuote();else updateQuoteTotals();}
 }
 
 function getClients(){
@@ -117,6 +188,7 @@ function saveClient(){
   clearClientForm();
   renderClients();
   populateClientSelect();
+  populateQuoteClientSelect();
   toast("Cliente cadastrado com sucesso");
 }
 function editClient(id){
@@ -124,7 +196,7 @@ function editClient(id){
   set("newClientName",c.name); set("newClientDocument",c.document); set("newClientAddress",c.address);
   set("newClientPhone",c.phone); set("newClientResponsible",c.responsible); set("newClientEmail",c.email);
   setClients(getClients().filter(x=>x.id!==id));
-  renderClients(); populateClientSelect();
+  renderClients(); populateClientSelect(); populateQuoteClientSelect();
   window.scrollTo({top:0,behavior:"smooth"});
   toast("Cliente carregado para edição. Salve novamente.");
 }
@@ -196,7 +268,7 @@ doc.setFontSize(7);doc.text("Documento gerado pelo sistema de FORTAL TECH.",10,2
 populate();
 document.querySelectorAll("#systems input[data-system]").forEach(cb=>cb.addEventListener("change",updateSystemChecklists));
 document.getElementById("serviceType").addEventListener("change",updateServiceTypeSection);
-setupCanvas("clientCanvas");setupCanvas("techCanvas");newOS();updateSystemChecklists();updateServiceTypeSection();
+setupCanvas("clientCanvas");setupCanvas("techCanvas");newOS();updateSystemChecklists();updateServiceTypeSection();populateQuoteClientSelect();newQuote();
 
 
 

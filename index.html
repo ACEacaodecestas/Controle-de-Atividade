@@ -160,6 +160,19 @@ input, select, textarea { min-height: 42px; }
 }
 
 #installBtn{white-space:nowrap}@media(max-width:600px){#installBtn{font-size:12px;padding:8px 9px!important}.top{gap:6px}}
+
+/* ===== ORÇAMENTOS ===== */
+.quote-checks{grid-template-columns:repeat(2,minmax(0,1fr));}
+.quote-table-wrap{overflow-x:auto;}
+.quote-table{width:100%;border-collapse:collapse;min-width:680px;}
+.quote-table th,.quote-table td{padding:9px;border-bottom:1px solid #d7dee8;text-align:left;vertical-align:middle;}
+.quote-table th{background:#f1f5f9;font-size:13px;}
+.quote-table input{width:100%;box-sizing:border-box;}
+.quote-total-box{margin-top:14px;display:flex;justify-content:flex-end;align-items:center;gap:18px;font-size:18px;padding:14px;background:#f8fafc;border-radius:10px;}
+.quote-total-box strong{font-size:24px;color:#067647;}
+.quote-remove{min-width:42px!important;padding:8px!important;}
+@media(max-width:700px){.quote-checks{grid-template-columns:1fr}.quote-table{min-width:620px}.quote-total-box{justify-content:space-between;font-size:15px}.quote-total-box strong{font-size:20px}}
+
 </style>
 </head>
 <body>
@@ -178,6 +191,7 @@ input, select, textarea { min-height: 42px; }
 <button class="primary" onclick="showTab('form')">📝 Nova OS</button>
 <button onclick="showTab('clients')">👥 Clientes</button>
 <button onclick="showTab('history')">📋 Histórico</button>
+<button onclick="showTab('quote')">💰 Orçamento</button>
 <button onclick="saveOS()">💾 Salvar</button>
 <button class="ok" onclick="generatePDF()">📄 Gerar PDF</button>
 </nav>
@@ -352,6 +366,66 @@ input, select, textarea { min-height: 42px; }
 <h2>Clientes cadastrados</h2>
 <input id="clientSearch" placeholder="Pesquisar cliente, CNPJ/CPF, telefone..." oninput="renderClients()">
 <div id="clientsList" style="margin-top:12px"></div>
+</div>
+</section>
+
+<section id="quoteTab" class="hidden">
+<div class="card">
+<h2>💰 Criar Orçamento</h2>
+<div class="grid">
+<div class="col-6"><label>Nº do orçamento</label><input id="quoteNumber" readonly></div>
+<div class="col-6"><label>Data</label><input id="quoteDate" type="date"></div>
+<div class="col-12"><label>Cliente *</label><select id="quoteClient" onchange="selectClientForQuote()"><option value="">— Selecione um cliente cadastrado —</option></select></div>
+<div class="col-6"><label>CNPJ/CPF</label><input id="quoteDocument" readonly></div>
+<div class="col-6"><label>Telefone</label><input id="quotePhone" readonly></div>
+<div class="col-12"><label>Endereço</label><input id="quoteAddress" readonly></div>
+</div>
+</div>
+
+<div class="card">
+<h2>🔧 Sistemas envolvidos</h2>
+<div id="quoteSystems" class="checks quote-checks">
+<label><input type="checkbox" data-group="quoteSystems" value="CFTV"> CFTV</label>
+<label><input type="checkbox" data-group="quoteSystems" value="Controle de Acesso"> Controle de Acesso</label>
+<label><input type="checkbox" data-group="quoteSystems" value="Cerca Elétrica"> Cerca Elétrica</label>
+<label><input type="checkbox" data-group="quoteSystems" value="Sistema de Alarme"> Sistema de Alarme</label>
+<label><input type="checkbox" data-group="quoteSystems" value="Infraestrutura/Rede"> Infraestrutura/Rede</label>
+<label><input type="checkbox" data-group="quoteSystems" value="Fonte/Nobreak"> Fonte/Nobreak</label>
+<label><input type="checkbox" data-group="quoteSystems" value="Outro"> Outro</label>
+</div>
+<div class="grid" style="margin-top:10px"><div class="col-12"><label>Outro sistema</label><input id="quoteOtherSystem" placeholder="Se selecionou Outro, informe o sistema"></div></div>
+</div>
+
+<div class="card">
+<h2>📝 Descrição do serviço / escopo</h2>
+<textarea id="quoteDescription" rows="5" placeholder="Descreva o serviço, instalação, manutenção ou fornecimento que será orçado..."></textarea>
+</div>
+
+<div class="card">
+<h2>📦 Itens do orçamento</h2>
+<div class="quote-table-wrap">
+<table class="quote-table">
+<thead><tr><th>Item / Descrição</th><th>Qtd.</th><th>Valor unitário (R$)</th><th>Total (R$)</th><th></th></tr></thead>
+<tbody id="quoteItems"></tbody>
+</table>
+</div>
+<button type="button" onclick="addQuoteItem()">➕ Adicionar item</button>
+<div class="quote-total-box"><span>Total do orçamento</span><strong id="quoteGrandTotal">R$ 0,00</strong></div>
+</div>
+
+<div class="card">
+<h2>📋 Condições do orçamento</h2>
+<div class="grid">
+<div class="col-4"><label>Validade do orçamento (dias)</label><input id="quoteValidity" type="number" min="1" value="10"></div>
+<div class="col-4"><label>Prazo de execução</label><input id="quoteDeadline" placeholder="Ex.: 5 dias úteis"></div>
+<div class="col-4"><label>Forma de pagamento</label><input id="quotePayment" placeholder="Ex.: 50% entrada / 50% conclusão"></div>
+<div class="col-12"><label>Observações / condições</label><textarea id="quoteNotes" rows="4" placeholder="Garantia, condições, materiais, serviços não inclusos etc."></textarea></div>
+</div>
+<div class="toolbar" style="margin-top:12px">
+<button type="button" class="primary" onclick="saveQuote()">💾 Salvar orçamento</button>
+<button type="button" class="ok" onclick="generateQuotePDF()">📄 Gerar PDF do orçamento</button>
+<button type="button" onclick="newQuote()">🧹 Novo orçamento</button>
+</div>
 </div>
 </section>
 

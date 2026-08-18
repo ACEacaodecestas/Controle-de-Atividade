@@ -202,51 +202,59 @@ setupCanvas("clientCanvas");setupCanvas("techCanvas");newOS();updateSystemCheckl
 // ================= PWA / INSTALAÇÃO =================
 let deferredInstallPrompt = null;
 
-if ("serviceWorker" in navigator) {
-  window.addEventListener("load", () => {
-    navigator.serviceWorker.register("./sw.js").catch(err =>
-      console.warn("Service Worker:", err)
-    );
-  });
+async function registerPWA() {
+  if (!("serviceWorker" in navigator)) return;
+  try {
+    const registration = await navigator.serviceWorker.register("./sw.js", {scope:"./"});
+    await navigator.serviceWorker.ready;
+    console.log("PWA Service Worker ativo:", registration.scope);
+  } catch (err) {
+    console.warn("Falha ao registrar PWA:", err);
+  }
 }
+window.addEventListener("load", registerPWA);
 
 window.addEventListener("beforeinstallprompt", (event) => {
   event.preventDefault();
   deferredInstallPrompt = event;
-  const btn = document.getElementById("installBtn");
-  if (btn) btn.style.display = "inline-block";
+  const btn=document.getElementById("installBtn");
+  if(btn){btn.style.display="inline-block";btn.textContent="📲 Instalar aplicativo";}
 });
 
-window.addEventListener("appinstalled", () => {
-  deferredInstallPrompt = null;
-  const btn = document.getElementById("installBtn");
-  if (btn) btn.style.display = "none";
-  if (typeof toast === "function") toast("Aplicativo instalado com sucesso!");
+window.addEventListener("appinstalled",()=>{
+  deferredInstallPrompt=null;
+  const btn=document.getElementById("installBtn");
+  if(btn) btn.style.display="none";
+  if(typeof toast==="function") toast("Aplicativo instalado com sucesso!");
 });
 
-async function installApp() {
-  if (deferredInstallPrompt) {
+async function installApp(){
+  if(deferredInstallPrompt){
     deferredInstallPrompt.prompt();
-    const result = await deferredInstallPrompt.userChoice;
-    deferredInstallPrompt = null;
-    if (result && result.outcome === "accepted" && typeof toast === "function") {
-      toast("Instalação iniciada!");
-    }
+    const result=await deferredInstallPrompt.userChoice;
+    deferredInstallPrompt=null;
+    if(result && result.outcome==="accepted" && typeof toast==="function") toast("Instalação iniciada!");
     return;
   }
 
-  const isAndroid = /Android/i.test(navigator.userAgent);
-  if (isAndroid) {
+  // O Chrome só fornece beforeinstallprompt quando todos os requisitos
+  // de instalação foram reconhecidos. Este diagnóstico ajuda a identificar
+  // cache/manifest/service worker antigos.
+  const standalone=window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone===true;
+  if(standalone){
+    if(typeof toast==="function") toast("O aplicativo já está instalado.");
+    return;
+  }
+
+  const android=/Android/i.test(navigator.userAgent);
+  if(android){
     alert(
-      "Para instalar no Android:\\n\\n" +
-      "1. Toque nos três pontos ⋮ do Chrome.\\n" +
-      "2. Escolha 'Instalar aplicativo' ou 'Adicionar à tela inicial'.\\n" +
-      "3. Confirme a instalação."
+      "O Android ainda não liberou a instalação automática desta página.\\n\\n"+
+      "Faça uma atualização completa da página e aguarde alguns segundos.\\n"+
+      "Depois toque novamente em 'Instalar aplicativo'.\\n\\n"+
+      "Se ainda não aparecer o instalador, abra o menu ⋮ do Chrome e procure 'Instalar aplicativo'."
     );
-  } else {
-    alert(
-      "O navegador não disponibilizou a instalação automática.\\n\\n" +
-      "No Chrome/Edge, procure o ícone de instalação na barra de endereço ou use o menu do navegador."
-    );
+  }else{
+    alert("O navegador ainda não liberou a instalação PWA. Atualize a página e tente novamente.");
   }
 }

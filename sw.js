@@ -1,4 +1,4 @@
-const CACHE="os-app-pwa-v5";
+const CACHE="os-app-pwa-v6";
 self.addEventListener("install",e=>e.waitUntil(
   caches.open(CACHE).then(c=>c.addAll(["./","./index.html","./manifest.json"]))
 ));

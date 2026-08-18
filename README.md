@@ -1,9 +1,10 @@
 # Controle de Atividade — Ordem de Serviço
 
-Versão PC + Android com instalação como aplicativo (PWA).
+Versão PC + Android com botão fixo **📲 Instalar aplicativo** no cabeçalho.
 
-O cabeçalho possui o botão **📲 Instalar aplicativo**. Em navegadores compatíveis ele aparece quando o sistema operacional disponibiliza a instalação.
+O botão fica visível sempre:
+- Se o navegador disponibilizar a instalação PWA, abre o instalador nativo.
+- No Android, se o navegador não disponibilizar o prompt automático, o botão mostra o caminho pelo menu do Chrome.
+- O app precisa estar publicado em HTTPS (GitHub Pages) para a instalação PWA.
 
-No Android, abra pelo Chrome e use o botão. No PC, Chrome/Edge também podem oferecer a instalação quando os requisitos do PWA estiverem atendidos.
-
-Mantenha o site publicado por HTTPS no GitHub Pages.
+Substitua os arquivos do repositório GitHub por esta versão e faça o Commit changes.

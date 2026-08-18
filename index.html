@@ -53,7 +53,7 @@ canvas{display:block;width:100%;height:180px}.small{font-size:12px;color:var(--m
 <div class="col-3"><label>Data</label><input id="osDate" type="date"></div>
 <div class="col-3"><label>Data da visita</label><input id="visitDate" type="date"></div>
 <div class="col-3"><label>Status</label><select id="status"><option>Aberta</option><option>Em andamento</option><option>Concluída</option><option>Cancelada</option></select></div>
-<div class="col-6"><label>Tipo de atendimento</label><select id="serviceType"><option>Manutenção Preventiva</option><option>Manutenção Corretiva</option><option>Visita Técnica</option><option>Retorno</option><option>Emergencial</option></select></div>
+<div class="col-6"><label>Tipo de atendimento</label><select id="serviceType"><option>Manutenção Preventiva</option><option>Manutenção Corretiva</option><option>Visita Técnica</option><option>Retorno</option><option>Emergencial</option></select><div class="small">A OS exibirá somente o formulário correspondente ao tipo selecionado.</div></div>
 <div class="col-6"><label>Prioridade</label><select id="priority"><option>Baixa</option><option>Média</option><option>Alta</option><option>Emergencial</option></select></div>
 </div></div>
 
@@ -118,9 +118,54 @@ canvas{display:block;width:100%;height:180px}.small{font-size:12px;color:var(--m
 <label>Observações</label><textarea id="otherObs"></textarea>
 </div>
 
-<div class="card"><h2>10. Manutenção Corretiva</h2>
-<label>Problema relatado</label><textarea id="problem"></textarea><label>Diagnóstico técnico</label><textarea id="diagnosis"></textarea><label>Causa identificada</label><textarea id="cause"></textarea><label>Serviço executado</label><textarea id="serviceDone"></textarea><label>Equipamento/peça substituída</label><textarea id="replaced"></textarea><label>Teste realizado após o reparo</label><textarea id="repairTest"></textarea>
+<div id="serviceTypeSections">
+<div class="card service-type-section" data-service-type="Manutenção Corretiva">
+<h2>10. Manutenção Corretiva</h2>
+<label>Problema relatado</label><textarea id="problem"></textarea>
+<label>Diagnóstico técnico</label><textarea id="diagnosis"></textarea>
+<label>Causa identificada</label><textarea id="cause"></textarea>
+<label>Serviço executado</label><textarea id="serviceDone"></textarea>
+<label>Equipamento/peça substituída</label><textarea id="replaced"></textarea>
+<label>Teste realizado após o reparo</label><textarea id="repairTest"></textarea>
 <label>Resultado</label><div class="checks" id="repairResults"></div>
+</div>
+
+<div class="card service-type-section" data-service-type="Manutenção Preventiva">
+<h2>10. Manutenção Preventiva</h2>
+<label>Objetivo / serviço programado</label><textarea id="preventiveObjective" placeholder="Descreva o objetivo da manutenção preventiva"></textarea>
+<label>Atividades preventivas realizadas</label><textarea id="preventiveActivities" placeholder="Descreva as atividades executadas"></textarea>
+<label>Condição encontrada durante a manutenção</label><textarea id="preventiveCondition"></textarea>
+<label>Recomendações para prevenção de falhas</label><textarea id="preventiveRecommendations"></textarea>
+<label>Resultado da manutenção</label><div class="checks" id="preventiveResults"></div>
+</div>
+
+<div class="card service-type-section" data-service-type="Visita Técnica">
+<h2>10. Visita Técnica</h2>
+<label>Motivo da visita</label><textarea id="visitReason"></textarea>
+<label>Avaliação técnica realizada</label><textarea id="visitEvaluation"></textarea>
+<label>Constatações</label><textarea id="visitFindings"></textarea>
+<label>Recomendações técnicas</label><textarea id="visitRecommendations"></textarea>
+<label>Resultado da visita</label><div class="checks" id="visitResults"></div>
+</div>
+
+<div class="card service-type-section" data-service-type="Retorno">
+<h2>10. Retorno</h2>
+<label>Nº da OS anterior</label><input id="returnPreviousOS">
+<label>Motivo do retorno</label><textarea id="returnReason"></textarea>
+<label>Pendência / serviço relacionado ao atendimento anterior</label><textarea id="returnPending"></textarea>
+<label>Ação realizada no retorno</label><textarea id="returnAction"></textarea>
+<label>Resultado do retorno</label><div class="checks" id="returnResults"></div>
+</div>
+
+<div class="card service-type-section" data-service-type="Emergencial">
+<h2>10. Atendimento Emergencial</h2>
+<label>Situação emergencial / problema crítico</label><textarea id="emergencySituation"></textarea>
+<label>Impacto ou risco identificado</label><textarea id="emergencyImpact"></textarea>
+<label>Ação imediata executada</label><textarea id="emergencyAction"></textarea>
+<label>Equipamento/peça substituída</label><textarea id="emergencyReplaced"></textarea>
+<label>Resultado após a intervenção</label><div class="checks" id="emergencyResults"></div>
+<label>Pendência após o atendimento emergencial</label><textarea id="emergencyPending"></textarea>
+</div>
 </div>
 
 <div class="card"><h2>11. Materiais / Peças Utilizados</h2><div id="materials"></div><button type="button" onclick="addMaterial()">➕ Adicionar item</button></div>
@@ -161,7 +206,11 @@ alarmSensors:["Sensores magnéticos testados","Sensores PIR testados","Sensores 
 alarmComm:["Internet/IP","GPRS/4G","Aplicativo","Central de monitoramento","Notificação de disparo"],
 infraChecks:["Racks organizados","Switches funcionando","Patch cords/conectores verificados","Cabeamento verificado","Fontes de alimentação verificadas","Nobreak funcionando","Baterias verificadas","Tomadas/alimentação verificadas","Equipamentos sem aquecimento anormal","Equipamentos identificados","Rede de comunicação funcionando"],sourceChecks:["Fonte de alimentação funcionando","Tensão de saída verificada","Cabos e conectores verificados","Bateria verificada","Nobreak funcionando","Autonomia do nobreak verificada","Alarmes do nobreak verificados","Tomadas e alimentação verificadas","Sinais de aquecimento anormal verificados","Equipamento identificado"],
 repairResults:["Equipamento normalizado","Sistema normalizado","Funcionamento parcial","Necessário retorno","Necessário orçamento","Necessária substituição de equipamento"],
-finalCondition:["Sistema funcionando normalmente","Sistema funcionando parcialmente","Equipamento permanece com falha","Necessário substituição de equipamento","Necessário novo atendimento","Aguardando aprovação de orçamento"]
+finalCondition:["Sistema funcionando normalmente","Sistema funcionando parcialmente","Equipamento permanece com falha","Necessário substituição de equipamento","Necessário novo atendimento","Aguardando aprovação de orçamento"],
+preventiveResults:["Manutenção preventiva concluída","Sistema funcionando normalmente","Foi identificada necessidade de correção","Necessário orçamento","Necessário retorno"],
+visitResults:["Avaliação concluída","Necessário orçamento","Necessário manutenção corretiva","Necessário retorno","Sistema sem irregularidades aparentes"],
+returnResults:["Pendência solucionada","Sistema normalizado","Funcionamento parcial","Necessário novo retorno","Necessário orçamento"],
+emergencyResults:["Sistema normalizado","Funcionamento parcial","Contenção realizada","Necessária manutenção definitiva","Necessário retorno","Necessário substituição de equipamento"]
 };
 function populate(){
 for(const [id,arr] of Object.entries(lists)){document.getElementById(id).innerHTML=arr.map((x,i)=>`<label><input type="checkbox" data-group="${id}" value="${esc(x)}"> ${esc(x)}</label>`).join("")}
@@ -192,6 +241,12 @@ if(hint) hint.textContent=selected.length
 ?"Checklist exibido conforme o(s) sistema(s) selecionado(s). Você pode selecionar mais de um."
 :"Selecione um ou mais sistemas. A OS exibirá somente os checklists correspondentes aos sistemas selecionados.";
 }
+function updateServiceTypeSection(){
+const type=document.getElementById("serviceType").value;
+document.querySelectorAll(".service-type-section").forEach(el=>{
+el.classList.toggle("hidden",el.dataset.serviceType!==type);
+});
+}
 function esc(s){return s.replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;")}
 function val(id){return document.getElementById(id)?.value||""}
 function set(id,v){if(document.getElementById(id))document.getElementById(id).value=v||""}
@@ -207,15 +262,25 @@ function clearCanvas(id){const c=document.getElementById(id);if(!c)return;const 
 function toast(t){const e=document.getElementById("toast");e.textContent=t;e.style.display="block";setTimeout(()=>e.style.display="none",1800)}
 function collect(){
 const materials=[...document.querySelectorAll(".material")].map(r=>({desc:r.querySelector(".matDesc").value,qty:r.querySelector(".matQty").value})).filter(x=>x.desc||x.qty);
-return {osNumber:val("osNumber"),osDate:val("osDate"),visitDate:val("visitDate"),status:val("status"),serviceType:val("serviceType"),priority:val("priority"),client:val("client"),document:val("document"),address:val("address"),phone:val("phone"),responsible:val("responsible"),technician:val("technician"),arrival:val("arrival"),departure:val("departure"),request:val("request"),systems:checks("systems"),otherSystem:val("otherSystem"),cameraQty:val("cameraQty"),cameraIssues:val("cameraIssues"),cftvObs:val("cftvObs"),accessFault:val("accessFault"),accessObs:val("accessObs"),fenceIssues:val("fenceIssues"),fenceObs:val("fenceObs"),alarmIssues:val("alarmIssues"),alarmObs:val("alarmObs"),infraIssues:val("infraIssues"),problem:val("problem"),diagnosis:val("diagnosis"),cause:val("cause"),serviceDone:val("serviceDone"),replaced:val("replaced"),repairTest:val("repairTest"),repairResults:checks("repairResults"),materials,photosBefore:val("photosBefore"),photosAfter:val("photosAfter"),photos:window.currentPhotos||[],pending:val("pending"),recommendations:val("recommendations"),extraQuote:val("extraQuote"),deadline:val("deadline"),quoteDescription:val("quoteDescription"),finalCondition:checks("finalCondition"),finalObs:val("finalObs"),sourceChecks:checks("sourceChecks"),sourceFault:val("sourceFault"),sourceObs:val("sourceObs"),otherChecks:val("otherChecks"),otherIssues:val("otherIssues"),otherObs:val("otherObs"),clientSignName:val("clientSignName"),clientRole:val("clientRole"),clientSignDate:val("clientSignDate"),clientSignature:document.getElementById("clientCanvas").toDataURL("image/png"),techSignName:val("techSignName"),techSignDate:val("techSignDate"),techSignature:document.getElementById("techCanvas").toDataURL("image/png"),generalNote:val("generalNote"),closedDate:val("closedDate"),closedTime:val("closedTime"),cftvChecks:checks("cftvChecks"),accessEquip:checks("accessEquip"),accessTests:checks("accessTests"),fenceChecks:checks("fenceChecks"),alarmCentral:checks("alarmCentral"),alarmSensors:checks("alarmSensors"),alarmComm:checks("alarmComm"),infraChecks:checks("infraChecks")};
-return {osNumber:val("osNumber"),osDate:val("osDate"),visitDate:val("visitDate"),status:val("status"),serviceType:val("serviceType"),priority:val("priority"),client:val("client"),document:val("document"),address:val("address"),phone:val("phone"),responsible:val("responsible"),technician:val("technician"),arrival:val("arrival"),departure:val("departure"),request:val("request"),systems:[...document.querySelectorAll("#systems input:checked")].map(x=>x.value),otherSystem:val("otherSystem"),cameraQty:val("cameraQty"),cameraIssues:val("cameraIssues"),cftvObs:val("cftvObs"),accessFault:val("accessFault"),accessObs:val("accessObs"),fenceIssues:val("fenceIssues"),fenceObs:val("fenceObs"),alarmIssues:val("alarmIssues"),alarmObs:val("alarmObs"),infraIssues:val("infraIssues"),problem:val("problem"),diagnosis:val("diagnosis"),cause:val("cause"),serviceDone:val("serviceDone"),replaced:val("replaced"),repairTest:val("repairTest"),repairResults:checks("repairResults"),materials,photosBefore:val("photosBefore"),photosAfter:val("photosAfter"),photos:window.currentPhotos||[],pending:val("pending"),recommendations:val("recommendations"),extraQuote:val("extraQuote"),deadline:val("deadline"),quoteDescription:val("quoteDescription"),finalCondition:checks("finalCondition"),finalObs:val("finalObs"),sourceChecks:checks("sourceChecks"),sourceFault:val("sourceFault"),sourceObs:val("sourceObs"),otherChecks:val("otherChecks"),otherIssues:val("otherIssues"),otherObs:val("otherObs"),clientSignName:val("clientSignName"),clientRole:val("clientRole"),clientSignDate:val("clientSignDate"),clientSignature:document.getElementById("clientCanvas").toDataURL("image/png"),techSignName:val("techSignName"),techSignDate:val("techSignDate"),techSignature:document.getElementById("techCanvas").toDataURL("image/png"),generalNote:val("generalNote"),closedDate:val("closedDate"),closedTime:val("closedTime"),cftvChecks:checks("cftvChecks"),accessEquip:checks("accessEquip"),accessTests:checks("accessTests"),fenceChecks:checks("fenceChecks"),alarmCentral:checks("alarmCentral"),alarmSensors:checks("alarmSensors"),alarmComm:checks("alarmComm"),infraChecks:checks("infraChecks")};
+return {osNumber:val("osNumber"),osDate:val("osDate"),visitDate:val("visitDate"),status:val("status"),serviceType:val("serviceType"),priority:val("priority"),client:val("client"),document:val("document"),address:val("address"),phone:val("phone"),responsible:val("responsible"),technician:val("technician"),arrival:val("arrival"),departure:val("departure"),request:val("request"),systems:checks("systems"),otherSystem:val("otherSystem"),cameraQty:val("cameraQty"),cameraIssues:val("cameraIssues"),cftvObs:val("cftvObs"),accessFault:val("accessFault"),accessObs:val("accessObs"),fenceIssues:val("fenceIssues"),fenceObs:val("fenceObs"),alarmIssues:val("alarmIssues"),alarmObs:val("alarmObs"),infraIssues:val("infraIssues"),problem:val("problem"),diagnosis:val("diagnosis"),cause:val("cause"),serviceDone:val("serviceDone"),replaced:val("replaced"),repairTest:val("repairTest"),repairResults:checks("repairResults"),
+preventiveObjective:val("preventiveObjective"),preventiveActivities:val("preventiveActivities"),preventiveCondition:val("preventiveCondition"),preventiveRecommendations:val("preventiveRecommendations"),preventiveResults:checks("preventiveResults"),
+visitReason:val("visitReason"),visitEvaluation:val("visitEvaluation"),visitFindings:val("visitFindings"),visitRecommendations:val("visitRecommendations"),visitResults:checks("visitResults"),
+returnPreviousOS:val("returnPreviousOS"),returnReason:val("returnReason"),returnPending:val("returnPending"),returnAction:val("returnAction"),returnResults:checks("returnResults"),
+emergencySituation:val("emergencySituation"),emergencyImpact:val("emergencyImpact"),emergencyAction:val("emergencyAction"),emergencyReplaced:val("emergencyReplaced"),emergencyResults:checks("emergencyResults"),emergencyPending:val("emergencyPending"),
+materials,photosBefore:val("photosBefore"),photosAfter:val("photosAfter"),photos:window.currentPhotos||[],pending:val("pending"),recommendations:val("recommendations"),extraQuote:val("extraQuote"),deadline:val("deadline"),quoteDescription:val("quoteDescription"),finalCondition:checks("finalCondition"),finalObs:val("finalObs"),sourceChecks:checks("sourceChecks"),sourceFault:val("sourceFault"),sourceObs:val("sourceObs"),otherChecks:val("otherChecks"),otherIssues:val("otherIssues"),otherObs:val("otherObs"),clientSignName:val("clientSignName"),clientRole:val("clientRole"),clientSignDate:val("clientSignDate"),clientSignature:document.getElementById("clientCanvas").toDataURL("image/png"),techSignName:val("techSignName"),techSignDate:val("techSignDate"),techSignature:document.getElementById("techCanvas").toDataURL("image/png"),generalNote:val("generalNote"),closedDate:val("closedDate"),closedTime:val("closedTime"),cftvChecks:checks("cftvChecks"),accessEquip:checks("accessEquip"),accessTests:checks("accessTests"),fenceChecks:checks("fenceChecks"),alarmCentral:checks("alarmCentral"),alarmSensors:checks("alarmSensors"),alarmComm:checks("alarmComm"),infraChecks:checks("infraChecks")};
+return {osNumber:val("osNumber"),osDate:val("osDate"),visitDate:val("visitDate"),status:val("status"),serviceType:val("serviceType"),priority:val("priority"),client:val("client"),document:val("document"),address:val("address"),phone:val("phone"),responsible:val("responsible"),technician:val("technician"),arrival:val("arrival"),departure:val("departure"),request:val("request"),systems:[...document.querySelectorAll("#systems input:checked")].map(x=>x.value),otherSystem:val("otherSystem"),cameraQty:val("cameraQty"),cameraIssues:val("cameraIssues"),cftvObs:val("cftvObs"),accessFault:val("accessFault"),accessObs:val("accessObs"),fenceIssues:val("fenceIssues"),fenceObs:val("fenceObs"),alarmIssues:val("alarmIssues"),alarmObs:val("alarmObs"),infraIssues:val("infraIssues"),problem:val("problem"),diagnosis:val("diagnosis"),cause:val("cause"),serviceDone:val("serviceDone"),replaced:val("replaced"),repairTest:val("repairTest"),repairResults:checks("repairResults"),
+preventiveObjective:val("preventiveObjective"),preventiveActivities:val("preventiveActivities"),preventiveCondition:val("preventiveCondition"),preventiveRecommendations:val("preventiveRecommendations"),preventiveResults:checks("preventiveResults"),
+visitReason:val("visitReason"),visitEvaluation:val("visitEvaluation"),visitFindings:val("visitFindings"),visitRecommendations:val("visitRecommendations"),visitResults:checks("visitResults"),
+returnPreviousOS:val("returnPreviousOS"),returnReason:val("returnReason"),returnPending:val("returnPending"),returnAction:val("returnAction"),returnResults:checks("returnResults"),
+emergencySituation:val("emergencySituation"),emergencyImpact:val("emergencyImpact"),emergencyAction:val("emergencyAction"),emergencyReplaced:val("emergencyReplaced"),emergencyResults:checks("emergencyResults"),emergencyPending:val("emergencyPending"),
+materials,photosBefore:val("photosBefore"),photosAfter:val("photosAfter"),photos:window.currentPhotos||[],pending:val("pending"),recommendations:val("recommendations"),extraQuote:val("extraQuote"),deadline:val("deadline"),quoteDescription:val("quoteDescription"),finalCondition:checks("finalCondition"),finalObs:val("finalObs"),sourceChecks:checks("sourceChecks"),sourceFault:val("sourceFault"),sourceObs:val("sourceObs"),otherChecks:val("otherChecks"),otherIssues:val("otherIssues"),otherObs:val("otherObs"),clientSignName:val("clientSignName"),clientRole:val("clientRole"),clientSignDate:val("clientSignDate"),clientSignature:document.getElementById("clientCanvas").toDataURL("image/png"),techSignName:val("techSignName"),techSignDate:val("techSignDate"),techSignature:document.getElementById("techCanvas").toDataURL("image/png"),generalNote:val("generalNote"),closedDate:val("closedDate"),closedTime:val("closedTime"),cftvChecks:checks("cftvChecks"),accessEquip:checks("accessEquip"),accessTests:checks("accessTests"),fenceChecks:checks("fenceChecks"),alarmCentral:checks("alarmCentral"),alarmSensors:checks("alarmSensors"),alarmComm:checks("alarmComm"),infraChecks:checks("infraChecks")};
 }
 function saveOS(){
 const d=collect();let arr=JSON.parse(localStorage.getItem("osList")||"[]");arr=arr.filter(x=>x.osNumber!==d.osNumber);arr.push(d);localStorage.setItem("osList",JSON.stringify(arr));toast("OS salva com sucesso")}
 function renderHistory(){
 const q=val("searchHistory").toLowerCase();const arr=JSON.parse(localStorage.getItem("osList")||"[]").filter(x=>JSON.stringify(x).toLowerCase().includes(q)).sort((a,b)=>b.osNumber.localeCompare(a.osNumber));document.getElementById("history").innerHTML=arr.length?arr.map(x=>`<div class="history-item"><div><b>OS ${x.osNumber}</b><br>${esc(x.client||"Sem cliente")}<br><span class="small">${x.osDate||""} • ${esc(x.status||"")}</span></div><div><button onclick="loadOS('${x.osNumber}')">Abrir</button> <button class="ok" onclick="loadOS('${x.osNumber}');setTimeout(generatePDF,300)">PDF</button></div></div>`).join(""):"Nenhuma OS encontrada."}
 function showTab(t){document.getElementById("formTab").classList.toggle("hidden",t!=="form");document.getElementById("historyTab").classList.toggle("hidden",t!=="history");if(t==="history")renderHistory()}
-function loadOS(num){const d=JSON.parse(localStorage.getItem("osList")||"[]").find(x=>x.osNumber===num);if(!d)return;set("osNumber",d.osNumber);Object.keys(d).forEach(k=>{if(document.getElementById(k)&&typeof d[k]==="string")set(k,d[k])});for(const g of Object.keys(lists)){document.querySelectorAll(`input[data-group="${g}"]`).forEach(c=>c.checked=(d[g]||[]).includes(c.value))}document.querySelectorAll('#systems input').forEach(c=>c.checked=(d.systems||[]).includes(c.value));updateSystemChecklists();document.getElementById("materials").innerHTML="";(d.materials||[]).forEach(addMaterial);window.currentPhotos=d.photos||[];renderPhotos();showTab("form");toast("OS carregada")}
+function loadOS(num){const d=JSON.parse(localStorage.getItem("osList")||"[]").find(x=>x.osNumber===num);if(!d)return;set("osNumber",d.osNumber);Object.keys(d).forEach(k=>{if(document.getElementById(k)&&typeof d[k]==="string")set(k,d[k])});for(const g of Object.keys(lists)){document.querySelectorAll(`input[data-group="${g}"]`).forEach(c=>c.checked=(d[g]||[]).includes(c.value))}document.querySelectorAll('#systems input').forEach(c=>c.checked=(d.systems||[]).includes(c.value));updateSystemChecklists();updateServiceTypeSection();document.getElementById("materials").innerHTML="";(d.materials||[]).forEach(addMaterial);window.currentPhotos=d.photos||[];renderPhotos();showTab("form");toast("OS carregada")}
 document.getElementById("photoInput").addEventListener("change",async e=>{window.currentPhotos=window.currentPhotos||[];for(const f of e.target.files){const r=new FileReader();r.onload=()=>{window.currentPhotos.push(r.result);renderPhotos()};r.readAsDataURL(f)}});
 function renderPhotos(){document.getElementById("photoGrid").innerHTML=(window.currentPhotos||[]).map((p,i)=>`<div class="photo-card"><img src="${p}"><button type="button" class="danger" onclick="currentPhotos.splice(${i},1);renderPhotos()">Excluir</button></div>`).join("")}
 function line(doc,label,value,x,y,w){doc.setFontSize(8);doc.setFont(undefined,"bold");doc.text(label,x,y);doc.setFont(undefined,"normal");let lines=doc.splitTextToSize(value||"—",w);doc.text(lines,x,y+4);return y+4+lines.length*3.8}
@@ -234,8 +299,14 @@ if(d.systems.includes("Infraestrutura/Rede")) groups.push(["INFRAESTRUTURA / RED
 if(d.systems.includes("Fonte/Nobreak")) groups.push(["FONTE/NOBREAK",d.sourceChecks]);
 for(const [t,a] of groups){y=section(doc,t,y+3);y=line(doc,"Itens verificados",a.length?a.map(v=>"✓ "+v).join(" | "):"Nenhum item marcado",10,y,190);if(y>270){doc.addPage();y=15}}
 if(d.systems.includes("Outro")) {y=section(doc,"OUTRO SISTEMA – "+(d.otherSystem||"Não informado"),y+3);y=line(doc,"Itens verificados",d.otherChecks,10,y,190);y=line(doc,"Irregularidades",d.otherIssues,10,y,190);y=line(doc,"Observações",d.otherObs,10,y,190);}
-y=section(doc,"MANUTENÇÃO CORRETIVA",y+3);for(const [l,k] of [["Problema relatado","problem"],["Diagnóstico técnico","diagnosis"],["Causa identificada","cause"],["Serviço executado","serviceDone"],["Equipamento/peça substituída","replaced"],["Teste após reparo","repairTest"]])y=line(doc,l,d[k],10,y,190);
-y=line(doc,"Resultado",d.repairResults.join(", "),10,y+2,190);
+const pdfServiceBlocks={
+"Manutenção Corretiva":()=>{y=section(doc,"MANUTENÇÃO CORRETIVA",y+3);for(const [l,k] of [["Problema relatado","problem"],["Diagnóstico técnico","diagnosis"],["Causa identificada","cause"],["Serviço executado","serviceDone"],["Equipamento/peça substituída","replaced"],["Teste após reparo","repairTest"]])y=line(doc,l,d[k],10,y,190);y=line(doc,"Resultado",d.repairResults.join(", "),10,y+2,190);},
+"Manutenção Preventiva":()=>{y=section(doc,"MANUTENÇÃO PREVENTIVA",y+3);for(const [l,k] of [["Objetivo / serviço programado","preventiveObjective"],["Atividades preventivas realizadas","preventiveActivities"],["Condição encontrada","preventiveCondition"],["Recomendações","preventiveRecommendations"]])y=line(doc,l,d[k],10,y,190);y=line(doc,"Resultado",d.preventiveResults.join(", "),10,y+2,190);},
+"Visita Técnica":()=>{y=section(doc,"VISITA TÉCNICA",y+3);for(const [l,k] of [["Motivo da visita","visitReason"],["Avaliação técnica","visitEvaluation"],["Constatações","visitFindings"],["Recomendações técnicas","visitRecommendations"]])y=line(doc,l,d[k],10,y,190);y=line(doc,"Resultado",d.visitResults.join(", "),10,y+2,190);},
+"Retorno":()=>{y=section(doc,"RETORNO",y+3);y=line(doc,"Nº da OS anterior",d.returnPreviousOS,10,y,190);for(const [l,k] of [["Motivo do retorno","returnReason"],["Pendência / serviço anterior","returnPending"],["Ação realizada no retorno","returnAction"]])y=line(doc,l,d[k],10,y,190);y=line(doc,"Resultado",d.returnResults.join(", "),10,y+2,190);},
+"Emergencial":()=>{y=section(doc,"ATENDIMENTO EMERGENCIAL",y+3);for(const [l,k] of [["Situação emergencial","emergencySituation"],["Impacto / risco","emergencyImpact"],["Ação imediata executada","emergencyAction"],["Equipamento/peça substituída","emergencyReplaced"],["Pendência após atendimento","emergencyPending"]])y=line(doc,l,d[k],10,y,190);y=line(doc,"Resultado",d.emergencyResults.join(", "),10,y+2,190);}
+};
+if(pdfServiceBlocks[d.serviceType]) pdfServiceBlocks[d.serviceType]();
 y=section(doc,"MATERIAIS / PEÇAS",y+3);(d.materials||[]).forEach((m,i)=>{y=line(doc,`${i+1}. ${m.desc}`,String(m.qty||""),10,y,190)});
 y=section(doc,"PENDÊNCIAS / RECOMENDAÇÕES",y+3);y=line(doc,"Pendências",d.pending,10,y,190);y=line(doc,"Recomendações",d.recommendations,10,y);y=line(doc,"Orçamento adicional",d.extraQuote+" — "+d.quoteDescription,10,y);y=line(doc,"Prazo recomendado",d.deadline,10,y);
 y=section(doc,"CONDIÇÃO FINAL",y+3);y=line(doc,"Condição",d.finalCondition.join(", "),10,y,190);y=line(doc,"Observações finais",d.finalObs,10,y);
@@ -245,7 +316,8 @@ y=line(doc,"Data do aceite",d.clientSignDate,10,y,90);y=line(doc,"Data do técni
 doc.setFontSize(7);doc.text("Documento gerado pelo sistema de Ordem de Serviço.",10,289);doc.save(`OS-${d.osNumber}.pdf`);toast("PDF gerado")}
 populate();
 document.querySelectorAll("#systems input[data-system]").forEach(cb=>cb.addEventListener("change",updateSystemChecklists));
-setupCanvas("clientCanvas");setupCanvas("techCanvas");newOS();updateSystemChecklists();
+document.getElementById("serviceType").addEventListener("change",updateServiceTypeSection);
+setupCanvas("clientCanvas");setupCanvas("techCanvas");newOS();updateSystemChecklists();updateServiceTypeSection();
 </script>
 </body>
 </html>

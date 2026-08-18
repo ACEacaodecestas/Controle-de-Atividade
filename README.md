@@ -1,15 +1,10 @@
-# Controle de Atividade — PWA
+# Ordem de Serviço — PWA com Diagnóstico
 
-Versão corrigida para GitHub Pages no repositório `Controle-de-Atividade`.
+Esta versão adiciona o botão **🔧 Diagnóstico PWA**.
 
-Arquivos:
-- index.html
-- app.js
-- manifest.json
-- sw.js
-- icons/icon-192.png
-- icons/icon-512.png
+Publique todos os arquivos na raiz do repositório e mantenha a pasta `icons/`.
 
-O sistema continua sendo um site e também pode ser instalado como PWA quando o Chrome/Edge reconhecer a instalação.
-
-IMPORTANTE: publicar todos os arquivos na raiz do repositório e a pasta `icons/`, mantendo a estrutura.
+Após publicar:
+1. Abra o aplicativo no Android.
+2. Toque em `🔧 Diagnóstico PWA`.
+3. Envie um print do resultado.

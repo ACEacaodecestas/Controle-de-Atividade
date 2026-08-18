@@ -1,8 +1,10 @@
 # FORTAL TECH — Ordem de Serviço
 
-Versão web/PWA do sistema de Ordem de Serviço.
+Atualização visual com novo cabeçalho FORTAL TECH.
 
-- Nome do aplicativo: FORTAL TECH
-- Ícone: logomarca FORTAL TECH fornecida pelo usuário
-- Continua funcionando no navegador e como PWA instalada no Android.
-- O botão de diagnóstico PWA foi removido da interface.
+Inclui:
+- cabeçalho profissional responsivo para PC e Android;
+- logomarca FORTAL TECH;
+- botão de instalação PWA;
+- navegação existente preservada;
+- cadastro de clientes, histórico, OS, checklists e PDF preservados.

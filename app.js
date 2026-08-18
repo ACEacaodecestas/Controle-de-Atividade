@@ -333,6 +333,8 @@ async function diagnosePWA() {
   add("beforeinstallprompt",
       !!deferredInstallPrompt || pwaInstallEventSeen,
       deferredInstallPrompt ? "disponível" : "não fornecido pelo Chrome");
+    add("offline shell", "serviceWorker" in navigator,
+      "Service Worker com cache do app configurado");
 
   add("Modo aplicativo", isStandalone(),
       isStandalone() ? "standalone" : "navegador");

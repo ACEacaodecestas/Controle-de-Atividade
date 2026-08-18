@@ -1,18 +1,12 @@
-# Ordem de Serviço — correção do Service Worker
+# Ordem de Serviço — PWA final com modo offline
 
-Esta versão corrige o principal problema encontrado no diagnóstico:
-Service Worker não registrado.
+Esta versão mantém a OS e corrige o Service Worker para oferecer um app-shell offline real.
 
-O registro agora usa explicitamente:
-`/Controle-de-Atividade/sw.js`
+Importante:
+- Publique todos os arquivos na raiz do GitHub Pages.
+- Mantenha a pasta `icons/`.
+- Depois de publicar, abra o site no Chrome Android e atualize.
+- Toque em `🔧 Diagnóstico PWA`.
+- O Service Worker deve aparecer como registrado e controlando.
 
-O Service Worker foi simplificado para não depender de cache de arquivos durante a instalação.
-
-Publique todos os arquivos na raiz do repositório e mantenha a pasta `icons/`.
-
-Após publicar:
-1. Abra o aplicativo no Chrome Android.
-2. Atualize a página.
-3. Toque em `🔧 Diagnóstico PWA`.
-4. Confira se `Service Worker registrado` aparece como ✅.
-5. Depois teste `📲 Instalar aplicativo`.
+O Chrome pode decidir quando mostrar o prompt de instalação. O evento `beforeinstallprompt` não é uma garantia permanente; a instalação também pode aparecer pelo menu do Chrome quando o site atende aos critérios.

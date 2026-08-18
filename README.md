@@ -1,8 +1,16 @@
 # FORTAL TECH — Ordem de Serviço
 
-Atualização V2 do cabeçalho.
+Versão com módulo completo de Orçamentos.
 
-O cabeçalho utiliza **a imagem fornecida pelo usuário, sem geração ou recorte adicional**, em:
-`assets/header-fortal-tech.png`
+## Orçamentos
+- Cadastro de orçamento ligado aos clientes cadastrados.
+- Seleção dos sistemas envolvidos.
+- Itens, quantidade, valor unitário e total automático.
+- Salvamento no navegador/app por localStorage.
+- Aba/listagem de orçamentos cadastrados.
+- Pesquisa por número, cliente ou sistema.
+- Edição e atualização de qualquer orçamento salvo.
+- Exclusão de orçamento.
+- Geração de PDF.
 
-O projeto continua funcionando como Web e PWA Android.
+Os orçamentos ficam armazenados localmente no dispositivo/navegador em que foram criados.

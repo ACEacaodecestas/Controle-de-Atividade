@@ -123,13 +123,38 @@ function newQuote(){
   set("quoteNumber",nextQuoteNumber());set("quoteDate",today());set("quoteValidity","10");
   document.querySelectorAll('#quoteSystems input[type="checkbox"]').forEach(x=>x.checked=false);
   document.getElementById("quoteItems").innerHTML="";for(let i=0;i<3;i++)addQuoteItem();
-  updateQuoteTotals();window.scrollTo({top:0,behavior:"smooth"});toast("Novo orçamento criado");
+  updateQuoteTotals();
+  const saveBtn=document.getElementById("quoteSaveBtn");if(saveBtn)saveBtn.textContent="💾 Salvar orçamento";
+  window.currentQuoteNumber=val("quoteNumber");
+  window.scrollTo({top:0,behavior:"smooth"});toast("Novo orçamento criado");
 }
 function saveQuote(){
   const d=collectQuote();
-  if(!d.client){toast("Selecione um cliente cadastrado");return}
-  if(!d.items.length){toast("Adicione pelo menos um item ao orçamento");return}
-  let arr=getQuotes();arr=arr.filter(x=>x.quoteNumber!==d.quoteNumber);arr.push(d);setQuotes(arr);toast("Orçamento salvo com sucesso");
+  if(!d.client){toast("Selecione um cliente cadastrado");return false}
+  if(!d.items.length){toast("Adicione pelo menos um item ao orçamento");return false}
+  let arr=getQuotes();arr=arr.filter(x=>x.quoteNumber!==d.quoteNumber);arr.push(d);setQuotes(arr);window.currentQuoteNumber=d.quoteNumber;renderQuotes();toast("Orçamento salvo com sucesso");return true;
+}
+function renderQuotes(){
+  const box=document.getElementById("quotesList");if(!box)return;
+  const q=val("quoteSearch").toLowerCase().trim();
+  const arr=getQuotes().filter(x=>JSON.stringify(x).toLowerCase().includes(q)).sort((a,b)=>String(b.quoteNumber).localeCompare(String(a.quoteNumber)));
+  box.innerHTML=arr.length?arr.map(x=>`<div class="history-item quote-history-item"><div><b>${esc(x.quoteNumber)}</b><br>${esc(x.client||"Sem cliente")}<br><span class="small">${esc(x.date||"")} • ${esc((x.systems||[]).join(", "))} • <strong>${money(x.total)}</strong></span></div><div><button type="button" onclick="editQuote('${esc(x.quoteNumber)}')">✏️ Editar</button> <button type="button" class="ok" onclick="editQuote('${esc(x.quoteNumber)}');setTimeout(generateQuotePDF,150)">📄 PDF</button> <button type="button" class="danger" onclick="deleteQuote('${esc(x.quoteNumber)}')">🗑️ Excluir</button></div></div>`).join(""):"Nenhum orçamento cadastrado.";
+}
+function editQuote(number){
+  const d=getQuotes().find(x=>x.quoteNumber===number);if(!d){toast("Orçamento não encontrado");return}
+  populateQuoteClientSelect();
+  set("quoteNumber",d.quoteNumber);set("quoteDate",d.date);set("quoteClient",d.clientId);selectClientForQuote();
+  set("quoteOtherSystem",d.otherSystem);set("quoteDescription",d.description);set("quoteValidity",d.validity);set("quoteDeadline",d.deadline);set("quotePayment",d.payment);set("quoteNotes",d.notes);
+  document.querySelectorAll('#quoteSystems input[type="checkbox"]').forEach(x=>x.checked=(d.systems||[]).includes(x.value));
+  const tbody=document.getElementById("quoteItems");tbody.innerHTML="";(d.items||[]).forEach(addQuoteItem);if(!d.items?.length)for(let i=0;i<3;i++)addQuoteItem();
+  updateQuoteTotals();window.currentQuoteNumber=d.quoteNumber;
+  const saveBtn=document.getElementById("quoteSaveBtn");if(saveBtn)saveBtn.textContent="💾 Atualizar orçamento";
+  showTab("quote");toast("Orçamento carregado para edição");window.scrollTo({top:0,behavior:"smooth"});
+}
+function deleteQuote(number){
+  const d=getQuotes().find(x=>x.quoteNumber===number);if(!d)return;
+  if(!confirm(`Excluir o orçamento ${number} de ${d.client||"cliente"}?`))return;
+  setQuotes(getQuotes().filter(x=>x.quoteNumber!==number));renderQuotes();toast("Orçamento excluído");
 }
 function generateQuotePDF(){
   const d=collectQuote();
@@ -144,7 +169,7 @@ function generateQuotePDF(){
   sec("SISTEMAS ENVOLVIDOS");field("Sistemas",d.systems.join(", ")+(d.otherSystem?" / "+d.otherSystem:""));
   sec("DESCRIÇÃO DO SERVIÇO / ESCOPO");field("Descrição",d.description);
   sec("ITENS DO ORÇAMENTO");
-  const startY=y;doc.setFontSize(8);doc.setFont(undefined,"bold");doc.text("Item / Descrição",10,y);doc.text("Qtd.",112,y);doc.text("Valor unit.",135,y);doc.text("Total",171,y);y+=5;doc.setFont(undefined,"normal");
+  doc.setFontSize(8);doc.setFont(undefined,"bold");doc.text("Item / Descrição",10,y);doc.text("Qtd.",112,y);doc.text("Valor unit.",135,y);doc.text("Total",171,y);y+=5;doc.setFont(undefined,"normal");
   d.items.forEach((it,i)=>{if(y>270){doc.addPage();y=15;doc.setFontSize(8)}const lineTotal=it.qty*it.unit;const descLines=doc.splitTextToSize(`${i+1}. ${it.desc}`,96);doc.text(descLines,10,y);doc.text(String(it.qty),112,y);doc.text(money(it.unit),135,y);doc.text(money(lineTotal),171,y);y+=Math.max(5,descLines.length*4);});
   doc.setDrawColor(180);doc.line(10,y,200,y);y+=7;doc.setFontSize(12);doc.setFont(undefined,"bold");doc.text("TOTAL DO ORÇAMENTO",120,y);doc.text(money(d.total),171,y);y+=10;
   sec("CONDIÇÕES DO ORÇAMENTO");field("Validade",`${d.validity||"—"} dias`);field("Prazo de execução",d.deadline);field("Forma de pagamento",d.payment);field("Observações / condições",d.notes);
@@ -159,7 +184,7 @@ document.getElementById("quoteTab").classList.toggle("hidden",t!=="quote");
 if(t==="history")renderHistory();
 if(t==="clients"){renderClients();}
 if(t==="form"){populateClientSelect();}
-if(t==="quote"){populateQuoteClientSelect();if(!val("quoteNumber"))newQuote();else updateQuoteTotals();}
+if(t==="quote"){populateQuoteClientSelect();renderQuotes();if(!val("quoteNumber"))newQuote();else updateQuoteTotals();}
 }
 
 function getClients(){

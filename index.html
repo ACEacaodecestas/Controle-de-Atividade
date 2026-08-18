@@ -191,7 +191,7 @@ input, select, textarea { min-height: 42px; }
 <button class="primary" onclick="showTab('form')">📝 Nova OS</button>
 <button onclick="showTab('clients')">👥 Clientes</button>
 <button onclick="showTab('history')">📋 Histórico</button>
-<button onclick="showTab('quote')">💰 Orçamento</button>
+<button onclick="showTab('quote')">💰 Orçamentos</button>
 <button onclick="saveOS()">💾 Salvar</button>
 <button class="ok" onclick="generatePDF()">📄 Gerar PDF</button>
 </nav>
@@ -371,7 +371,13 @@ input, select, textarea { min-height: 42px; }
 
 <section id="quoteTab" class="hidden">
 <div class="card">
-<h2>💰 Criar Orçamento</h2>
+<h2>📋 Orçamentos cadastrados</h2>
+<input id="quoteSearch" placeholder="Pesquisar por nº do orçamento, cliente ou sistema..." oninput="renderQuotes()">
+<div id="quotesList" style="margin-top:12px"></div>
+</div>
+
+<div class="card">
+<h2>💰 Criar / Editar Orçamento</h2>
 <div class="grid">
 <div class="col-6"><label>Nº do orçamento</label><input id="quoteNumber" readonly></div>
 <div class="col-6"><label>Data</label><input id="quoteDate" type="date"></div>
@@ -422,7 +428,7 @@ input, select, textarea { min-height: 42px; }
 <div class="col-12"><label>Observações / condições</label><textarea id="quoteNotes" rows="4" placeholder="Garantia, condições, materiais, serviços não inclusos etc."></textarea></div>
 </div>
 <div class="toolbar" style="margin-top:12px">
-<button type="button" class="primary" onclick="saveQuote()">💾 Salvar orçamento</button>
+<button id="quoteSaveBtn" type="button" class="primary" onclick="saveQuote()">💾 Salvar orçamento</button>
 <button type="button" class="ok" onclick="generateQuotePDF()">📄 Gerar PDF do orçamento</button>
 <button type="button" onclick="newQuote()">🧹 Novo orçamento</button>
 </div>

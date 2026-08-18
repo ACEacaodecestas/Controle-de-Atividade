@@ -40,6 +40,7 @@ canvas{display:block;width:100%;height:180px}.small{font-size:12px;color:var(--m
 <div class="wrap">
 <nav class="no-print">
 <button class="primary" onclick="showTab('form')">📝 Nova OS</button>
+<button onclick="showTab('clients')">👥 Clientes</button>
 <button onclick="showTab('history')">📋 Histórico</button>
 <button onclick="saveOS()">💾 Salvar</button>
 <button class="ok" onclick="generatePDF()">📄 Gerar PDF</button>
@@ -57,7 +58,11 @@ canvas{display:block;width:100%;height:180px}.small{font-size:12px;color:var(--m
 <div class="col-6"><label>Prioridade</label><select id="priority"><option>Baixa</option><option>Média</option><option>Alta</option><option>Emergencial</option></select></div>
 </div></div>
 
-<div class="card"><h2>1. Dados do Cliente</h2><div class="grid">
+<div class="card"><h2>1. Dados do Cliente</h2>
+<div class="grid">
+<div class="col-12"><label>Cliente</label><select id="clientSelect" onchange="selectClientForOS()"><option value="">— Selecione um cliente cadastrado —</option></select><div class="small">Cadastre os clientes no menu 👥 Clientes. Ao selecionar, os dados abaixo serão preenchidos automaticamente.</div></div>
+</div>
+<div class="grid">
 <div class="col-6"><label>Cliente/Condomínio</label><input id="client"></div>
 <div class="col-6"><label>CNPJ/CPF</label><input id="document"></div>
 <div class="col-8"><label>Endereço</label><input id="address"></div>
@@ -191,6 +196,29 @@ canvas{display:block;width:100%;height:180px}.small{font-size:12px;color:var(--m
 </form>
 </section>
 
+<section id="clientsTab" class="hidden">
+<div class="card">
+<h2>👥 Cadastro de Clientes</h2>
+<div class="grid">
+<div class="col-6"><label>Cliente/Condomínio *</label><input id="newClientName"></div>
+<div class="col-6"><label>CNPJ/CPF</label><input id="newClientDocument"></div>
+<div class="col-8"><label>Endereço</label><input id="newClientAddress"></div>
+<div class="col-4"><label>Telefone</label><input id="newClientPhone"></div>
+<div class="col-6"><label>Responsável pelo acompanhamento</label><input id="newClientResponsible"></div>
+<div class="col-6"><label>E-mail</label><input id="newClientEmail" type="email"></div>
+</div>
+<div class="toolbar" style="margin-top:12px">
+<button type="button" class="primary" onclick="saveClient()">💾 Cadastrar cliente</button>
+<button type="button" onclick="clearClientForm()">🧹 Limpar</button>
+</div>
+</div>
+<div class="card">
+<h2>Clientes cadastrados</h2>
+<input id="clientSearch" placeholder="Pesquisar cliente, CNPJ/CPF, telefone..." oninput="renderClients()">
+<div id="clientsList" style="margin-top:12px"></div>
+</div>
+</section>
+
 <section id="historyTab" class="hidden"><div class="card"><h2>Histórico de Ordens de Serviço</h2><input id="searchHistory" placeholder="Pesquisar por OS, cliente, técnico ou equipamento..." oninput="renderHistory()"><div id="history"></div></div></section>
 </div><div id="toast"></div>
 
@@ -254,7 +282,7 @@ function checks(group){return [...document.querySelectorAll(`input[data-group="$
 function today(){return new Date().toISOString().slice(0,10)}
 function nextNumber(){let n=Number(localStorage.getItem("osNext")||"1");localStorage.setItem("osNext",n+1);return String(n).padStart(6,"0")}
 function newOS(){
-document.getElementById("osForm").reset();set("osNumber",nextNumber());set("osDate",today());set("visitDate",today());set("clientSignDate",today());set("techSignDate",today());set("closedDate",today());document.getElementById("materials").innerHTML="";for(let i=0;i<3;i++)addMaterial();clearCanvas("clientCanvas");clearCanvas("techCanvas");document.getElementById("photoGrid").innerHTML="";window.scrollTo({top:0,behavior:"smooth"});toast("Nova OS criada")}
+document.getElementById("osForm").reset();populateClientSelect();set("osNumber",nextNumber());set("osDate",today());set("visitDate",today());set("clientSignDate",today());set("techSignDate",today());set("closedDate",today());document.getElementById("materials").innerHTML="";for(let i=0;i<3;i++)addMaterial();clearCanvas("clientCanvas");clearCanvas("techCanvas");document.getElementById("photoGrid").innerHTML="";window.scrollTo({top:0,behavior:"smooth"});toast("Nova OS criada")}
 function addMaterial(data={}){const d=document.createElement("div");d.className="grid material";d.style.marginBottom="8px";d.innerHTML=`<div class="col-8"><input class="matDesc" placeholder="Descrição" value="${esc(data.desc||"")}"></div><div class="col-3"><input class="matQty" type="number" min="0" placeholder="Quantidade" value="${data.qty||""}"></div><div class="col-1"><button type="button" class="danger" onclick="this.parentElement.parentElement.remove()">✕</button></div>`;document.getElementById("materials").appendChild(d)}
 function setupCanvas(id){const c=document.getElementById(id),ctx=c.getContext("2d");let drawing=false,last={x:0,y:0};function pos(e){const r=c.getBoundingClientRect();const p=e.touches?e.touches[0]:e;return{x:(p.clientX-r.left)*c.width/r.width,y:(p.clientY-r.top)*c.height/r.height}}function down(e){drawing=true;last=pos(e);e.preventDefault()}function move(e){if(!drawing)return;const p=pos(e);ctx.beginPath();ctx.moveTo(last.x,last.y);ctx.lineTo(p.x,p.y);ctx.strokeStyle="#111827";ctx.lineWidth=2.5;ctx.lineCap="round";ctx.stroke();last=p;e.preventDefault()}function up(){drawing=false}c.addEventListener("mousedown",down);c.addEventListener("mousemove",move);window.addEventListener("mouseup",up);c.addEventListener("touchstart",down,{passive:false});c.addEventListener("touchmove",move,{passive:false});c.addEventListener("touchend",up);resizeCanvas(c,ctx)}
 function resizeCanvas(c,ctx){const r=c.getBoundingClientRect(),ratio=Math.max(devicePixelRatio||1,1);c.width=r.width*ratio;c.height=180*ratio;ctx.scale(ratio,ratio)}
@@ -279,7 +307,83 @@ function saveOS(){
 const d=collect();let arr=JSON.parse(localStorage.getItem("osList")||"[]");arr=arr.filter(x=>x.osNumber!==d.osNumber);arr.push(d);localStorage.setItem("osList",JSON.stringify(arr));toast("OS salva com sucesso")}
 function renderHistory(){
 const q=val("searchHistory").toLowerCase();const arr=JSON.parse(localStorage.getItem("osList")||"[]").filter(x=>JSON.stringify(x).toLowerCase().includes(q)).sort((a,b)=>b.osNumber.localeCompare(a.osNumber));document.getElementById("history").innerHTML=arr.length?arr.map(x=>`<div class="history-item"><div><b>OS ${x.osNumber}</b><br>${esc(x.client||"Sem cliente")}<br><span class="small">${x.osDate||""} • ${esc(x.status||"")}</span></div><div><button onclick="loadOS('${x.osNumber}')">Abrir</button> <button class="ok" onclick="loadOS('${x.osNumber}');setTimeout(generatePDF,300)">PDF</button></div></div>`).join(""):"Nenhuma OS encontrada."}
-function showTab(t){document.getElementById("formTab").classList.toggle("hidden",t!=="form");document.getElementById("historyTab").classList.toggle("hidden",t!=="history");if(t==="history")renderHistory()}
+function showTab(t){
+document.getElementById("formTab").classList.toggle("hidden",t!=="form");
+document.getElementById("clientsTab").classList.toggle("hidden",t!=="clients");
+document.getElementById("historyTab").classList.toggle("hidden",t!=="history");
+if(t==="history")renderHistory();
+if(t==="clients")renderClients();
+if(t==="form")populateClientSelect();
+}
+
+function getClients(){
+  return JSON.parse(localStorage.getItem("clientsList")||"[]");
+}
+function setClients(arr){
+  localStorage.setItem("clientsList",JSON.stringify(arr));
+}
+function clearClientForm(){
+  ["newClientName","newClientDocument","newClientAddress","newClientPhone","newClientResponsible","newClientEmail"].forEach(id=>set(id,""));
+}
+function saveClient(){
+  const name=val("newClientName").trim();
+  if(!name){toast("Informe o nome do cliente/condomínio");return}
+  const clients=getClients();
+  const id=crypto.randomUUID?crypto.randomUUID():String(Date.now());
+  clients.push({
+    id,name,
+    document:val("newClientDocument"),
+    address:val("newClientAddress"),
+    phone:val("newClientPhone"),
+    responsible:val("newClientResponsible"),
+    email:val("newClientEmail")
+  });
+  setClients(clients);
+  clearClientForm();
+  renderClients();
+  populateClientSelect();
+  toast("Cliente cadastrado com sucesso");
+}
+function editClient(id){
+  const c=getClients().find(x=>x.id===id); if(!c)return;
+  set("newClientName",c.name); set("newClientDocument",c.document); set("newClientAddress",c.address);
+  set("newClientPhone",c.phone); set("newClientResponsible",c.responsible); set("newClientEmail",c.email);
+  setClients(getClients().filter(x=>x.id!==id));
+  renderClients(); populateClientSelect();
+  window.scrollTo({top:0,behavior:"smooth"});
+  toast("Cliente carregado para edição. Salve novamente.");
+}
+function deleteClient(id){
+  const c=getClients().find(x=>x.id===id); if(!c)return;
+  if(!confirm("Excluir o cliente \""+c.name+"\"?"))return;
+  setClients(getClients().filter(x=>x.id!==id));
+  renderClients(); populateClientSelect();
+  toast("Cliente excluído");
+}
+function renderClients(){
+  const q=val("clientSearch").toLowerCase();
+  const arr=getClients().filter(c=>JSON.stringify(c).toLowerCase().includes(q));
+  const el=document.getElementById("clientsList"); if(!el)return;
+  el.innerHTML=arr.length?arr.map(c=>`<div class="history-item">
+    <div><b>${esc(c.name)}</b><br><span class="small">${esc(c.document||"")} ${c.phone?"• "+esc(c.phone):""}<br>${esc(c.address||"")}</span></div>
+    <div><button type="button" onclick="editClient('${c.id}')">✏️ Editar</button>
+    <button type="button" class="danger" onclick="deleteClient('${c.id}')">Excluir</button></div>
+  </div>`).join(""):"Nenhum cliente cadastrado.";
+}
+function populateClientSelect(){
+  const el=document.getElementById("clientSelect"); if(!el)return;
+  const current=el.value;
+  const arr=getClients();
+  el.innerHTML='<option value="">— Selecione um cliente cadastrado —</option>'+arr.map(c=>`<option value="${c.id}">${esc(c.name)}${c.document?" — "+esc(c.document):""}</option>`).join("");
+  if(arr.some(c=>c.id===current))el.value=current;
+}
+function selectClientForOS(){
+  const id=val("clientSelect"); if(!id)return;
+  const c=getClients().find(x=>x.id===id); if(!c)return;
+  set("client",c.name); set("document",c.document); set("address",c.address);
+  set("phone",c.phone); set("responsible",c.responsible);
+}
+
 function loadOS(num){const d=JSON.parse(localStorage.getItem("osList")||"[]").find(x=>x.osNumber===num);if(!d)return;set("osNumber",d.osNumber);Object.keys(d).forEach(k=>{if(document.getElementById(k)&&typeof d[k]==="string")set(k,d[k])});for(const g of Object.keys(lists)){document.querySelectorAll(`input[data-group="${g}"]`).forEach(c=>c.checked=(d[g]||[]).includes(c.value))}document.querySelectorAll('#systems input').forEach(c=>c.checked=(d.systems||[]).includes(c.value));updateSystemChecklists();updateServiceTypeSection();document.getElementById("materials").innerHTML="";(d.materials||[]).forEach(addMaterial);window.currentPhotos=d.photos||[];renderPhotos();showTab("form");toast("OS carregada")}
 document.getElementById("photoInput").addEventListener("change",async e=>{window.currentPhotos=window.currentPhotos||[];for(const f of e.target.files){const r=new FileReader();r.onload=()=>{window.currentPhotos.push(r.result);renderPhotos()};r.readAsDataURL(f)}});
 function renderPhotos(){document.getElementById("photoGrid").innerHTML=(window.currentPhotos||[]).map((p,i)=>`<div class="photo-card"><img src="${p}"><button type="button" class="danger" onclick="currentPhotos.splice(${i},1);renderPhotos()">Excluir</button></div>`).join("")}

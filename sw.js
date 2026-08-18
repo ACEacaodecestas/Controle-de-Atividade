@@ -1,4 +1,4 @@
-const CACHE_NAME = "controle-atividade-pwa-v9";
+const CACHE_NAME = "fortal-tech-pwa-v10";
 const BASE = "/Controle-de-Atividade/";
 
 const APP_SHELL = [
@@ -7,7 +7,8 @@ const APP_SHELL = [
   BASE + "app.js",
   BASE + "manifest.json",
   BASE + "icons/icon-192.png",
-  BASE + "icons/icon-512.png"
+  BASE + "icons/icon-512.png",
+  BASE + "assets/header-fortal-tech.png"
 ];
 
 self.addEventListener("install", (event) => {

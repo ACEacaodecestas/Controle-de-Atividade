@@ -1,23 +1,15 @@
-# Controle de Atividade — PWA completo
+# Controle de Atividade — PWA
 
-Esta versão mantém o aplicativo web e também permite instalação como aplicativo no Android e em navegadores compatíveis no PC.
+Versão corrigida para GitHub Pages no repositório `Controle-de-Atividade`.
 
-Estrutura:
-- `index.html` — interface
-- `app.js` — lógica completa da aplicação
-- `manifest.json` — identidade e instalação PWA
-- `sw.js` — Service Worker/cache
-- `icons/` — ícones 192x192 e 512x512
+Arquivos:
+- index.html
+- app.js
+- manifest.json
+- sw.js
+- icons/icon-192.png
+- icons/icon-512.png
 
-Funcionalidades preservadas:
-- Cadastro de clientes
-- Cliente selecionável na OS
-- Tipos de atendimento
-- Checklists dinâmicos por sistema
-- Fotos
-- Assinatura do cliente e técnico
-- Histórico
-- PDF
-- Botão de instalação
+O sistema continua sendo um site e também pode ser instalado como PWA quando o Chrome/Edge reconhecer a instalação.
 
-Publique os arquivos na raiz (`main / root`) do GitHub Pages, sempre em HTTPS.
+IMPORTANTE: publicar todos os arquivos na raiz do repositório e a pasta `icons/`, mantendo a estrutura.

@@ -2,18 +2,31 @@
   "name": "Controle de Atividade - Ordem de Serviço",
   "short_name": "Ordem de Serviço",
   "description": "Sistema de Ordem de Serviço para manutenção preventiva e corretiva",
-  "id": "./",
-  "start_url": "./",
-  "scope": "./",
+  "id": "/Controle-de-Atividade/",
+  "start_url": "/Controle-de-Atividade/",
+  "scope": "/Controle-de-Atividade/",
   "display": "standalone",
-  "display_override": ["standalone", "minimal-ui"],
+  "display_override": [
+    "standalone",
+    "minimal-ui"
+  ],
   "background_color": "#0b1220",
   "theme_color": "#0b1220",
   "lang": "pt-BR",
   "orientation": "any",
   "prefer_related_applications": false,
   "icons": [
-    {"src":"./icons/icon-192.png","sizes":"192x192","type":"image/png","purpose":"any maskable"},
-    {"src":"./icons/icon-512.png","sizes":"512x512","type":"image/png","purpose":"any maskable"}
+    {
+      "src": "/Controle-de-Atividade/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/Controle-de-Atividade/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
   ]
 }

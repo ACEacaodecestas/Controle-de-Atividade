@@ -200,61 +200,107 @@ setupCanvas("clientCanvas");setupCanvas("techCanvas");newOS();updateSystemCheckl
 
 
 // ================= PWA / INSTALAÇÃO =================
+// O aplicativo continua funcionando como site. A instalação só é acionada
+// quando o navegador realmente fornece o prompt PWA.
 let deferredInstallPrompt = null;
 
-async function registerPWA() {
-  if (!("serviceWorker" in navigator)) return;
-  try {
-    const registration = await navigator.serviceWorker.register("./sw.js", {scope:"./"});
-    await navigator.serviceWorker.ready;
-    console.log("PWA Service Worker ativo:", registration.scope);
-  } catch (err) {
-    console.warn("Falha ao registrar PWA:", err);
-  }
+function pwaButton() {
+  return document.getElementById("installBtn");
 }
-window.addEventListener("load", registerPWA);
+
+function updateInstallButton() {
+  const btn = pwaButton();
+  if (!btn) return;
+
+  const standalone =
+    window.matchMedia("(display-mode: standalone)").matches ||
+    window.navigator.standalone === true;
+
+  if (standalone) {
+    btn.style.display = "none";
+    return;
+  }
+
+  // Mantemos o botão visível para o usuário, mas ele só abre o instalador
+  // quando o navegador tiver fornecido beforeinstallprompt.
+  btn.style.display = "inline-block";
+}
 
 window.addEventListener("beforeinstallprompt", (event) => {
   event.preventDefault();
   deferredInstallPrompt = event;
-  const btn=document.getElementById("installBtn");
-  if(btn){btn.style.display="inline-block";btn.textContent="📲 Instalar aplicativo";}
+  updateInstallButton();
+  const btn = pwaButton();
+  if (btn) btn.textContent = "📲 Instalar aplicativo";
 });
 
-window.addEventListener("appinstalled",()=>{
-  deferredInstallPrompt=null;
-  const btn=document.getElementById("installBtn");
-  if(btn) btn.style.display="none";
-  if(typeof toast==="function") toast("Aplicativo instalado com sucesso!");
+window.addEventListener("appinstalled", () => {
+  deferredInstallPrompt = null;
+  updateInstallButton();
+  if (typeof toast === "function") toast("Aplicativo instalado com sucesso!");
 });
 
-async function installApp(){
-  if(deferredInstallPrompt){
+async function registerPWA() {
+  if (!("serviceWorker" in navigator)) {
+    console.warn("Este navegador não suporta Service Worker.");
+    return;
+  }
+
+  try {
+    const registration = await navigator.serviceWorker.register("./sw.js", {
+      scope: "./"
+    });
+    await navigator.serviceWorker.ready;
+    console.log("PWA Service Worker ativo:", registration.scope);
+  } catch (error) {
+    console.error("Erro ao registrar Service Worker:", error);
+  }
+
+  updateInstallButton();
+}
+
+async function installApp() {
+  // Só chamar prompt() quando o Chrome/Edge tiver realmente fornecido
+  // beforeinstallprompt.
+  if (deferredInstallPrompt) {
     deferredInstallPrompt.prompt();
-    const result=await deferredInstallPrompt.userChoice;
-    deferredInstallPrompt=null;
-    if(result && result.outcome==="accepted" && typeof toast==="function") toast("Instalação iniciada!");
+    const choice = await deferredInstallPrompt.userChoice;
+    deferredInstallPrompt = null;
+
+    if (choice && choice.outcome === "accepted") {
+      if (typeof toast === "function") toast("Instalação iniciada!");
+    }
     return;
   }
 
-  // O Chrome só fornece beforeinstallprompt quando todos os requisitos
-  // de instalação foram reconhecidos. Este diagnóstico ajuda a identificar
-  // cache/manifest/service worker antigos.
-  const standalone=window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone===true;
-  if(standalone){
-    if(typeof toast==="function") toast("O aplicativo já está instalado.");
+  const standalone =
+    window.matchMedia("(display-mode: standalone)").matches ||
+    window.navigator.standalone === true;
+
+  if (standalone) {
+    if (typeof toast === "function") toast("O aplicativo já está instalado.");
     return;
   }
 
-  const android=/Android/i.test(navigator.userAgent);
-  if(android){
+  // Sem beforeinstallprompt não existe autorização para abrir o instalador
+  // nativo. Em vez de simular uma instalação, orientamos o usuário.
+  const isAndroid = /Android/i.test(navigator.userAgent);
+
+  if (isAndroid) {
     alert(
-      "O Android ainda não liberou a instalação automática desta página.\\n\\n"+
-      "Faça uma atualização completa da página e aguarde alguns segundos.\\n"+
-      "Depois toque novamente em 'Instalar aplicativo'.\\n\\n"+
-      "Se ainda não aparecer o instalador, abra o menu ⋮ do Chrome e procure 'Instalar aplicativo'."
+      "O Chrome ainda não liberou a instalação automática deste aplicativo.\\n\\n" +
+      "Abra o menu ⋮ do Chrome e verifique se aparece 'Instalar aplicativo'.\\n\\n" +
+      "Se aparecer apenas 'Adicionar à tela inicial', o Chrome ainda está tratando o endereço como site."
     );
-  }else{
-    alert("O navegador ainda não liberou a instalação PWA. Atualize a página e tente novamente.");
+  } else {
+    alert(
+      "O navegador ainda não liberou a instalação PWA. " +
+      "No Chrome/Edge, procure o ícone de instalação na barra de endereço."
+    );
   }
 }
+
+window.addEventListener("load", () => {
+  registerPWA();
+  updateInstallButton();
+});

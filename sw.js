@@ -1,4 +1,4 @@
-const CACHE_NAME = "fortal-tech-pwa-v10";
+const CACHE_NAME = "fortal-tech-pwa-v30";
 const BASE = "/Controle-de-Atividade/";
 
 const APP_SHELL = [

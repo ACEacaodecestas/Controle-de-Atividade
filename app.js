@@ -1,435 +1,3691 @@
+// ============================================================
+// ACE - CONTROLE DE ALIMENTOS
+// V7 + SUPABASE AUTH
+// ============================================================
 
-const lists={
-cftvChecks:["Verificação do funcionamento das câmeras","Verificação da imagem","Verificação de foco e enquadramento","Verificação de lente","Limpeza das lentes","Verificação de fixação","Verificação de conectores","Verificação do cabeamento","Verificação da alimentação","Verificação de câmeras offline","Teste de visualização ao vivo","Teste de infravermelho/visão noturna","Verificação de câmera com imagem distorcida/intermitente"],
-accessEquip:["Controladora","Leitor facial","Leitor RFID/Tag","Biometria","Fechadura eletromagnética","Fechadura elétrica","Eclusa/Intertravamento","Botoeira","Sensor magnético","Catraca","Portão","Interfonia"],
-accessTests:["Teste de abertura","Teste de fechamento","Teste de leitura facial","Teste de leitura de cartão/tag","Teste de botoeira","Teste de fechadura","Verificação de alimentação","Verificação de bateria/fonte","Verificação de comunicação de rede","Verificação dos usuários cadastrados","Teste de acionamento remoto","Verificação dos registros/eventos"],
-fenceChecks:["Central de choque funcionando","Alimentação elétrica verificada","Bateria verificada","Tensão de saída verificada conforme especificação do fabricante","Fios de alta tensão verificados","Isoladores verificados","Hastes verificadas","Fixações verificadas","Arames/fios verificados","Aterramento verificado","Sinais de oxidação identificados","Vegetação/objetos próximos removidos","Sirene testada","Disparo/alarme testado","Tamper/violação testado","Central comunicando corretamente","Perímetro inspecionado"],
-alarmCentral:["Central funcionando","Alimentação verificada","Bateria verificada","Comunicação verificada","Eventos verificados","Memória de eventos consultada"],
-alarmSensors:["Sensores magnéticos testados","Sensores PIR testados","Sensores externos testados","Sensor de movimento testado","Botão de pânico testado","Sirene testada","Teclado testado"],
-alarmComm:["Internet/IP","GPRS/4G","Aplicativo","Central de monitoramento","Notificação de disparo"],
-infraChecks:["Racks organizados","Switches funcionando","Patch cords/conectores verificados","Cabeamento verificado","Fontes de alimentação verificadas","Nobreak funcionando","Baterias verificadas","Tomadas/alimentação verificadas","Equipamentos sem aquecimento anormal","Equipamentos identificados","Rede de comunicação funcionando"],sourceChecks:["Fonte de alimentação funcionando","Tensão de saída verificada","Cabos e conectores verificados","Bateria verificada","Nobreak funcionando","Autonomia do nobreak verificada","Alarmes do nobreak verificados","Tomadas e alimentação verificadas","Sinais de aquecimento anormal verificados","Equipamento identificado"],
-repairResults:["Equipamento normalizado","Sistema normalizado","Funcionamento parcial","Necessário retorno","Necessário orçamento","Necessária substituição de equipamento"],
-finalCondition:["Sistema funcionando normalmente","Sistema funcionando parcialmente","Equipamento permanece com falha","Necessário substituição de equipamento","Necessário novo atendimento","Aguardando aprovação de orçamento"],
-preventiveResults:["Manutenção preventiva concluída","Sistema funcionando normalmente","Foi identificada necessidade de correção","Necessário orçamento","Necessário retorno"],
-visitResults:["Avaliação concluída","Necessário orçamento","Necessário manutenção corretiva","Necessário retorno","Sistema sem irregularidades aparentes"],
-returnResults:["Pendência solucionada","Sistema normalizado","Funcionamento parcial","Necessário novo retorno","Necessário orçamento"],
-emergencyResults:["Sistema normalizado","Funcionamento parcial","Contenção realizada","Necessária manutenção definitiva","Necessário retorno","Necessário substituição de equipamento"]
+// ============================================================
+// 1. CONFIGURAÇÃO DO SUPABASE
+// ============================================================
+
+const SUPABASE_URL = "https://jblyzktbngvjqgvejgsa.supabase.co";
+
+// COLE AQUI A SUA SUPABASE PUBLISHABLE KEY
+const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_tLvr-LHX18qGGjGzkFVs6A_Alh83jMm";
+
+const supabaseClient = window.supabase.createClient(
+  SUPABASE_URL,
+  SUPABASE_PUBLISHABLE_KEY
+);
+
+
+// ============================================================
+// 2. BANCO LOCAL TEMPORÁRIO
+// ============================================================
+
+const KEY = "controle_alimentos_v1";
+
+const DEFAULT = {
+  origins: ["Piedade", "Água Fria"],
+
+  reasons: [
+    "Gorbulho",
+    "Vencimento",
+    "Avaria",
+    "Outro"
+  ],
+
+  foods: [
+    "Açúcar 1 kg",
+    "Arroz 1 kg",
+    "Café 250g",
+    "Café Almofada 250g",
+    "Charque",
+    "Farinha Mandioca 1kg",
+    "Feijão 1kg",
+    "Flocão 400G/500g",
+    "Leite 200g",
+    "Macarrão",
+    "Macarrão NINHO/LASANHA",
+    "Óleo 900ml",
+    "Proteína de Soja 400g",
+    "Sal 1kg"
+  ],
+
+  people: [
+    ["Alexandre Gonçalves Tavares", "43571"],
+    ["Angelo Potrichi", "43986"],
+    ["Mariella Pompeu", "43983"],
+    ["Stefania Márcia Câmara Monteiro", "44134"],
+    ["José Airton Martins Filho", "44051"],
+    ["André Settinieri", "42705"]
+  ].map(([name, registration]) => ({
+    id: uid(),
+    name,
+    registration
+  }))
 };
-function populate(){
-for(const [id,arr] of Object.entries(lists)){document.getElementById(id).innerHTML=arr.map((x,i)=>`<label><input type="checkbox" data-group="${id}" value="${esc(x)}"> ${esc(x)}</label>`).join("")}
-}
-
-const systemChecklistMap={
-"CFTV":"checklistCFTV",
-"Controle de Acesso":"checklistAccess",
-"Cerca Elétrica":"checklistFence",
-"Sistema de Alarme":"checklistAlarm",
-"Infraestrutura/Rede":"checklistInfra",
-"Fonte/Nobreak":"checklistSource",
-"Outro":"checklistOther"
-};
-function selectedSystems(){
-return [...document.querySelectorAll("#systems input[data-system]:checked")].map(x=>x.value);
-}
-function updateSystemChecklists(){
-const selected=selectedSystems();
-document.querySelectorAll(".system-checklist").forEach(card=>{
-const name=card.dataset.checklist;
-card.classList.toggle("hidden",!selected.includes(name));
-});
-const otherWrap=document.getElementById("otherSystemWrap");
-if(otherWrap) otherWrap.classList.toggle("hidden",!selected.includes("Outro"));
-const hint=document.getElementById("systemHint");
-if(hint) hint.textContent=selected.length
-?"Checklist exibido conforme o(s) sistema(s) selecionado(s). Você pode selecionar mais de um."
-:"Selecione um ou mais sistemas. A OS exibirá somente os checklists correspondentes aos sistemas selecionados.";
-}
-function updateServiceTypeSection(){
-const type=document.getElementById("serviceType").value;
-document.querySelectorAll(".service-type-section").forEach(el=>{
-el.classList.toggle("hidden",el.dataset.serviceType!==type);
-});
-}
-function esc(s){return s.replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;")}
-function val(id){return document.getElementById(id)?.value||""}
-function set(id,v){if(document.getElementById(id))document.getElementById(id).value=v||""}
-function checks(group){return [...document.querySelectorAll(`input[data-group="${group}"]:checked`)].map(x=>x.value)}
-function today(){return new Date().toISOString().slice(0,10)}
-function nextNumber(){let n=Number(localStorage.getItem("osNext")||"1");localStorage.setItem("osNext",n+1);return String(n).padStart(6,"0")}
-function newOS(){
-document.getElementById("osForm").reset();populateClientSelect();set("osNumber",nextNumber());set("osDate",today());set("visitDate",today());set("clientSignDate",today());set("techSignDate",today());set("closedDate",today());document.getElementById("materials").innerHTML="";for(let i=0;i<3;i++)addMaterial();clearCanvas("clientCanvas");clearCanvas("techCanvas");document.getElementById("photoGrid").innerHTML="";window.scrollTo({top:0,behavior:"smooth"});toast("Nova OS criada")}
-function addMaterial(data={}){const d=document.createElement("div");d.className="grid material";d.style.marginBottom="8px";d.innerHTML=`<div class="col-8"><input class="matDesc" placeholder="Descrição" value="${esc(data.desc||"")}"></div><div class="col-3"><input class="matQty" type="number" min="0" placeholder="Quantidade" value="${data.qty||""}"></div><div class="col-1"><button type="button" class="danger" onclick="this.parentElement.parentElement.remove()">✕</button></div>`;document.getElementById("materials").appendChild(d)}
-function setupCanvas(id){const c=document.getElementById(id),ctx=c.getContext("2d");let drawing=false,last={x:0,y:0};function pos(e){const r=c.getBoundingClientRect();const p=e.touches?e.touches[0]:e;return{x:(p.clientX-r.left)*c.width/r.width,y:(p.clientY-r.top)*c.height/r.height}}function down(e){drawing=true;last=pos(e);e.preventDefault()}function move(e){if(!drawing)return;const p=pos(e);ctx.beginPath();ctx.moveTo(last.x,last.y);ctx.lineTo(p.x,p.y);ctx.strokeStyle="#111827";ctx.lineWidth=2.5;ctx.lineCap="round";ctx.stroke();last=p;e.preventDefault()}function up(){drawing=false}c.addEventListener("mousedown",down);c.addEventListener("mousemove",move);window.addEventListener("mouseup",up);c.addEventListener("touchstart",down,{passive:false});c.addEventListener("touchmove",move,{passive:false});c.addEventListener("touchend",up);resizeCanvas(c,ctx)}
-function resizeCanvas(c,ctx){const r=c.getBoundingClientRect(),ratio=Math.max(devicePixelRatio||1,1);c.width=r.width*ratio;c.height=180*ratio;ctx.scale(ratio,ratio)}
-function clearCanvas(id){const c=document.getElementById(id);if(!c)return;const ctx=c.getContext("2d");ctx.clearRect(0,0,c.width,c.height)}
-function toast(t){const e=document.getElementById("toast");e.textContent=t;e.style.display="block";setTimeout(()=>e.style.display="none",1800)}
-function collect(){
-const materials=[...document.querySelectorAll(".material")].map(r=>({desc:r.querySelector(".matDesc").value,qty:r.querySelector(".matQty").value})).filter(x=>x.desc||x.qty);
-return {osNumber:val("osNumber"),osDate:val("osDate"),visitDate:val("visitDate"),status:val("status"),serviceType:val("serviceType"),priority:val("priority"),client:val("client"),document:val("document"),address:val("address"),phone:val("phone"),responsible:val("responsible"),technician:val("technician"),arrival:val("arrival"),departure:val("departure"),request:val("request"),systems:checks("systems"),otherSystem:val("otherSystem"),cameraQty:val("cameraQty"),cameraIssues:val("cameraIssues"),cftvObs:val("cftvObs"),accessFault:val("accessFault"),accessObs:val("accessObs"),fenceIssues:val("fenceIssues"),fenceObs:val("fenceObs"),alarmIssues:val("alarmIssues"),alarmObs:val("alarmObs"),infraIssues:val("infraIssues"),problem:val("problem"),diagnosis:val("diagnosis"),cause:val("cause"),serviceDone:val("serviceDone"),replaced:val("replaced"),repairTest:val("repairTest"),repairResults:checks("repairResults"),
-preventiveObjective:val("preventiveObjective"),preventiveActivities:val("preventiveActivities"),preventiveCondition:val("preventiveCondition"),preventiveRecommendations:val("preventiveRecommendations"),preventiveResults:checks("preventiveResults"),
-visitReason:val("visitReason"),visitEvaluation:val("visitEvaluation"),visitFindings:val("visitFindings"),visitRecommendations:val("visitRecommendations"),visitResults:checks("visitResults"),
-returnPreviousOS:val("returnPreviousOS"),returnReason:val("returnReason"),returnPending:val("returnPending"),returnAction:val("returnAction"),returnResults:checks("returnResults"),
-emergencySituation:val("emergencySituation"),emergencyImpact:val("emergencyImpact"),emergencyAction:val("emergencyAction"),emergencyReplaced:val("emergencyReplaced"),emergencyResults:checks("emergencyResults"),emergencyPending:val("emergencyPending"),
-materials,photosBefore:val("photosBefore"),photosAfter:val("photosAfter"),photos:window.currentPhotos||[],pending:val("pending"),recommendations:val("recommendations"),extraQuote:val("extraQuote"),deadline:val("deadline"),quoteDescription:val("quoteDescription"),finalCondition:checks("finalCondition"),finalObs:val("finalObs"),sourceChecks:checks("sourceChecks"),sourceFault:val("sourceFault"),sourceObs:val("sourceObs"),otherChecks:val("otherChecks"),otherIssues:val("otherIssues"),otherObs:val("otherObs"),clientSignName:val("clientSignName"),clientRole:val("clientRole"),clientSignDate:val("clientSignDate"),clientSignature:document.getElementById("clientCanvas").toDataURL("image/png"),techSignName:val("techSignName"),techSignDate:val("techSignDate"),techSignature:document.getElementById("techCanvas").toDataURL("image/png"),generalNote:val("generalNote"),closedDate:val("closedDate"),closedTime:val("closedTime"),cftvChecks:checks("cftvChecks"),accessEquip:checks("accessEquip"),accessTests:checks("accessTests"),fenceChecks:checks("fenceChecks"),alarmCentral:checks("alarmCentral"),alarmSensors:checks("alarmSensors"),alarmComm:checks("alarmComm"),infraChecks:checks("infraChecks")};
-return {osNumber:val("osNumber"),osDate:val("osDate"),visitDate:val("visitDate"),status:val("status"),serviceType:val("serviceType"),priority:val("priority"),client:val("client"),document:val("document"),address:val("address"),phone:val("phone"),responsible:val("responsible"),technician:val("technician"),arrival:val("arrival"),departure:val("departure"),request:val("request"),systems:[...document.querySelectorAll("#systems input:checked")].map(x=>x.value),otherSystem:val("otherSystem"),cameraQty:val("cameraQty"),cameraIssues:val("cameraIssues"),cftvObs:val("cftvObs"),accessFault:val("accessFault"),accessObs:val("accessObs"),fenceIssues:val("fenceIssues"),fenceObs:val("fenceObs"),alarmIssues:val("alarmIssues"),alarmObs:val("alarmObs"),infraIssues:val("infraIssues"),problem:val("problem"),diagnosis:val("diagnosis"),cause:val("cause"),serviceDone:val("serviceDone"),replaced:val("replaced"),repairTest:val("repairTest"),repairResults:checks("repairResults"),
-preventiveObjective:val("preventiveObjective"),preventiveActivities:val("preventiveActivities"),preventiveCondition:val("preventiveCondition"),preventiveRecommendations:val("preventiveRecommendations"),preventiveResults:checks("preventiveResults"),
-visitReason:val("visitReason"),visitEvaluation:val("visitEvaluation"),visitFindings:val("visitFindings"),visitRecommendations:val("visitRecommendations"),visitResults:checks("visitResults"),
-returnPreviousOS:val("returnPreviousOS"),returnReason:val("returnReason"),returnPending:val("returnPending"),returnAction:val("returnAction"),returnResults:checks("returnResults"),
-emergencySituation:val("emergencySituation"),emergencyImpact:val("emergencyImpact"),emergencyAction:val("emergencyAction"),emergencyReplaced:val("emergencyReplaced"),emergencyResults:checks("emergencyResults"),emergencyPending:val("emergencyPending"),
-materials,photosBefore:val("photosBefore"),photosAfter:val("photosAfter"),photos:window.currentPhotos||[],pending:val("pending"),recommendations:val("recommendations"),extraQuote:val("extraQuote"),deadline:val("deadline"),quoteDescription:val("quoteDescription"),finalCondition:checks("finalCondition"),finalObs:val("finalObs"),sourceChecks:checks("sourceChecks"),sourceFault:val("sourceFault"),sourceObs:val("sourceObs"),otherChecks:val("otherChecks"),otherIssues:val("otherIssues"),otherObs:val("otherObs"),clientSignName:val("clientSignName"),clientRole:val("clientRole"),clientSignDate:val("clientSignDate"),clientSignature:document.getElementById("clientCanvas").toDataURL("image/png"),techSignName:val("techSignName"),techSignDate:val("techSignDate"),techSignature:document.getElementById("techCanvas").toDataURL("image/png"),generalNote:val("generalNote"),closedDate:val("closedDate"),closedTime:val("closedTime"),cftvChecks:checks("cftvChecks"),accessEquip:checks("accessEquip"),accessTests:checks("accessTests"),fenceChecks:checks("fenceChecks"),alarmCentral:checks("alarmCentral"),alarmSensors:checks("alarmSensors"),alarmComm:checks("alarmComm"),infraChecks:checks("infraChecks")};
-}
-function saveOS(){
-const d=collect();let arr=JSON.parse(localStorage.getItem("osList")||"[]");arr=arr.filter(x=>x.osNumber!==d.osNumber);arr.push(d);localStorage.setItem("osList",JSON.stringify(arr));toast("OS salva com sucesso")}
-function renderHistory(){
-const q=val("searchHistory").toLowerCase();const arr=JSON.parse(localStorage.getItem("osList")||"[]").filter(x=>JSON.stringify(x).toLowerCase().includes(q)).sort((a,b)=>b.osNumber.localeCompare(a.osNumber));document.getElementById("history").innerHTML=arr.length?arr.map(x=>`<div class="history-item"><div><b>OS ${x.osNumber}</b><br>${esc(x.client||"Sem cliente")}<br><span class="small">${x.osDate||""} • ${esc(x.status||"")}</span></div><div><button onclick="loadOS('${x.osNumber}')">Abrir</button> <button class="ok" onclick="loadOS('${x.osNumber}');setTimeout(generatePDF,300)">PDF</button></div></div>`).join(""):"Nenhuma OS encontrada."}
-function getQuotes(){return JSON.parse(localStorage.getItem("quotesList")||"[]")}
-function setQuotes(arr){localStorage.setItem("quotesList",JSON.stringify(arr))}
-function nextQuoteNumber(){let n=Number(localStorage.getItem("quoteNext")||"1");localStorage.setItem("quoteNext",n+1);return "ORC-"+String(n).padStart(6,"0")}
-function populateQuoteClientSelect(){
-  const sel=document.getElementById("quoteClient"); if(!sel)return;
-  const current=sel.value;
-  const clients=getClients();
-  sel.innerHTML='<option value="">— Selecione um cliente cadastrado —</option>'+clients.map(c=>`<option value="${esc(c.id)}">${esc(c.name)}</option>`).join("");
-  if(current && clients.some(c=>c.id===current))sel.value=current;
-}
-function selectClientForQuote(){
-  const c=getClients().find(x=>x.id===val("quoteClient"));
-  if(!c){set("quoteDocument","");set("quotePhone","");set("quoteAddress","");return}
-  set("quoteDocument",c.document);set("quotePhone",c.phone);set("quoteAddress",c.address);
-}
-function addQuoteItem(data={}){
-  const tbody=document.getElementById("quoteItems"); if(!tbody)return;
-  const tr=document.createElement("tr"); tr.className="quote-item";
-  tr.innerHTML=`<td><input class="quoteDesc" placeholder="Descrição do item ou serviço" value="${esc(data.desc||"")}"></td><td style="width:90px"><input class="quoteQty" type="number" min="0" step="0.01" value="${data.qty??1}" oninput="updateQuoteTotals()"></td><td style="width:160px"><input class="quoteUnit" type="number" min="0" step="0.01" placeholder="0,00" value="${data.unit??""}" oninput="updateQuoteTotals()"></td><td style="width:140px"><strong class="quoteLineTotal">R$ 0,00</strong></td><td style="width:55px"><button type="button" class="danger quote-remove" onclick="this.closest('tr').remove();updateQuoteTotals()">✕</button></td>`;
-  tbody.appendChild(tr);updateQuoteTotals();
-}
-function money(v){return Number(v||0).toLocaleString("pt-BR",{style:"currency",currency:"BRL"})}
-function updateQuoteTotals(){
-  let total=0;
-  document.querySelectorAll(".quote-item").forEach(row=>{
-    const qty=Number(row.querySelector(".quoteQty")?.value||0);const unit=Number(row.querySelector(".quoteUnit")?.value||0);const line=qty*unit;total+=line;
-    const el=row.querySelector(".quoteLineTotal");if(el)el.textContent=money(line);
-  });
-  const g=document.getElementById("quoteGrandTotal");if(g)g.textContent=money(total);
-  return total;
-}
-function collectQuote(){
-  const client=getClients().find(c=>c.id===val("quoteClient"));
-  const items=[...document.querySelectorAll(".quote-item")].map(r=>({desc:r.querySelector(".quoteDesc")?.value.trim()||"",qty:Number(r.querySelector(".quoteQty")?.value||0),unit:Number(r.querySelector(".quoteUnit")?.value||0)})).filter(x=>x.desc||x.qty||x.unit);
-  return {quoteNumber:val("quoteNumber"),date:val("quoteDate"),clientId:client?.id||"",client:client?.name||"",document:client?.document||"",phone:client?.phone||"",address:client?.address||"",systems:checks("quoteSystems"),otherSystem:val("quoteOtherSystem"),description:val("quoteDescription"),items,validity:val("quoteValidity"),deadline:val("quoteDeadline"),payment:val("quotePayment"),notes:val("quoteNotes"),total:updateQuoteTotals()};
-}
-function newQuote(){
-  ["quoteClient","quoteDocument","quotePhone","quoteAddress","quoteOtherSystem","quoteDescription","quoteDeadline","quotePayment","quoteNotes"].forEach(id=>set(id,""));
-  set("quoteNumber",nextQuoteNumber());set("quoteDate",today());set("quoteValidity","10");
-  document.querySelectorAll('#quoteSystems input[type="checkbox"]').forEach(x=>x.checked=false);
-  document.getElementById("quoteItems").innerHTML="";for(let i=0;i<3;i++)addQuoteItem();
-  updateQuoteTotals();
-  const saveBtn=document.getElementById("quoteSaveBtn");if(saveBtn)saveBtn.textContent="💾 Salvar orçamento";
-  window.currentQuoteNumber=val("quoteNumber");
-  window.scrollTo({top:0,behavior:"smooth"});toast("Novo orçamento criado");
-}
-function saveQuote(){
-  const d=collectQuote();
-  if(!d.client){toast("Selecione um cliente cadastrado");return false}
-  if(!d.items.length){toast("Adicione pelo menos um item ao orçamento");return false}
-  let arr=getQuotes();arr=arr.filter(x=>x.quoteNumber!==d.quoteNumber);arr.push(d);setQuotes(arr);window.currentQuoteNumber=d.quoteNumber;renderQuotes();toast("Orçamento salvo com sucesso");return true;
-}
-function renderQuotes(){
-  const box=document.getElementById("quotesList");if(!box)return;
-  const q=val("quoteSearch").toLowerCase().trim();
-  const arr=getQuotes().filter(x=>JSON.stringify(x).toLowerCase().includes(q)).sort((a,b)=>String(b.quoteNumber).localeCompare(String(a.quoteNumber)));
-  box.innerHTML=arr.length?arr.map(x=>`<div class="history-item quote-history-item"><div><b>${esc(x.quoteNumber)}</b><br>${esc(x.client||"Sem cliente")}<br><span class="small">${esc(x.date||"")} • ${esc((x.systems||[]).join(", "))} • <strong>${money(x.total)}</strong></span></div><div><button type="button" onclick="editQuote('${esc(x.quoteNumber)}')">✏️ Editar</button> <button type="button" class="ok" onclick="editQuote('${esc(x.quoteNumber)}');setTimeout(generateQuotePDF,150)">📄 PDF</button> <button type="button" class="danger" onclick="deleteQuote('${esc(x.quoteNumber)}')">🗑️ Excluir</button></div></div>`).join(""):"Nenhum orçamento cadastrado.";
-}
-function editQuote(number){
-  const d=getQuotes().find(x=>x.quoteNumber===number);if(!d){toast("Orçamento não encontrado");return}
-  populateQuoteClientSelect();
-  set("quoteNumber",d.quoteNumber);set("quoteDate",d.date);set("quoteClient",d.clientId);selectClientForQuote();
-  set("quoteOtherSystem",d.otherSystem);set("quoteDescription",d.description);set("quoteValidity",d.validity);set("quoteDeadline",d.deadline);set("quotePayment",d.payment);set("quoteNotes",d.notes);
-  document.querySelectorAll('#quoteSystems input[type="checkbox"]').forEach(x=>x.checked=(d.systems||[]).includes(x.value));
-  const tbody=document.getElementById("quoteItems");tbody.innerHTML="";(d.items||[]).forEach(addQuoteItem);if(!d.items?.length)for(let i=0;i<3;i++)addQuoteItem();
-  updateQuoteTotals();window.currentQuoteNumber=d.quoteNumber;
-  const saveBtn=document.getElementById("quoteSaveBtn");if(saveBtn)saveBtn.textContent="💾 Atualizar orçamento";
-  showTab("quote");toast("Orçamento carregado para edição");window.scrollTo({top:0,behavior:"smooth"});
-}
-function deleteQuote(number){
-  const d=getQuotes().find(x=>x.quoteNumber===number);if(!d)return;
-  if(!confirm(`Excluir o orçamento ${number} de ${d.client||"cliente"}?`))return;
-  setQuotes(getQuotes().filter(x=>x.quoteNumber!==number));renderQuotes();toast("Orçamento excluído");
-}
-function generateQuotePDF(){
-  const d=collectQuote();
-  if(!d.client){toast("Selecione um cliente cadastrado");return}
-  if(!d.items.length){toast("Adicione pelo menos um item ao orçamento");return}
-  saveQuote();
-  const {jsPDF}=window.jspdf;const doc=new jsPDF({unit:"mm",format:"a4"});let y=16;
-  doc.setFillColor(11,18,32);doc.rect(0,0,210,30,"F");doc.setTextColor(255);doc.setFontSize(17);doc.setFont(undefined,"bold");doc.text("FORTAL TECH",10,12);doc.setFontSize(9);doc.setFont(undefined,"normal");doc.text("SEGURANÇA ELETRÔNICA & ELÉTRICA",10,19);doc.text("ORÇAMENTO",154,15);doc.text(`Nº ${d.quoteNumber}`,154,21);doc.setTextColor(0);y=39;
-  const sec=(title)=>{if(y>275){doc.addPage();y=15}doc.setFillColor(11,18,32);doc.setTextColor(255);doc.rect(10,y-5,190,7,"F");doc.setFontSize(10);doc.setFont(undefined,"bold");doc.text(title,12,y);doc.setTextColor(0);y+=8};
-  const field=(label,value,w=190)=>{doc.setFontSize(8);doc.setFont(undefined,"bold");doc.text(label,10,y);doc.setFont(undefined,"normal");const lines=doc.splitTextToSize(value||"—",w);doc.text(lines,10,y+4);y+=4+lines.length*4.2};
-  sec("DADOS DO CLIENTE");field("Cliente / Condomínio",d.client);field("CNPJ/CPF",d.document);field("Endereço",d.address);field("Telefone",d.phone);field("Data do orçamento",d.date);
-  sec("SISTEMAS ENVOLVIDOS");field("Sistemas",d.systems.join(", ")+(d.otherSystem?" / "+d.otherSystem:""));
-  sec("DESCRIÇÃO DO SERVIÇO / ESCOPO");field("Descrição",d.description);
-  sec("ITENS DO ORÇAMENTO");
-  doc.setFontSize(8);doc.setFont(undefined,"bold");doc.text("Item / Descrição",10,y);doc.text("Qtd.",112,y);doc.text("Valor unit.",135,y);doc.text("Total",171,y);y+=5;doc.setFont(undefined,"normal");
-  d.items.forEach((it,i)=>{if(y>270){doc.addPage();y=15;doc.setFontSize(8)}const lineTotal=it.qty*it.unit;const descLines=doc.splitTextToSize(`${i+1}. ${it.desc}`,96);doc.text(descLines,10,y);doc.text(String(it.qty),112,y);doc.text(money(it.unit),135,y);doc.text(money(lineTotal),171,y);y+=Math.max(5,descLines.length*4);});
-  doc.setDrawColor(180);doc.line(10,y,200,y);y+=7;doc.setFontSize(12);doc.setFont(undefined,"bold");doc.text("TOTAL DO ORÇAMENTO",120,y);doc.text(money(d.total),171,y);y+=10;
-  sec("CONDIÇÕES DO ORÇAMENTO");field("Validade",`${d.validity||"—"} dias`);field("Prazo de execução",d.deadline);field("Forma de pagamento",d.payment);field("Observações / condições",d.notes);
-  doc.setFontSize(7);doc.setFont(undefined,"normal");doc.text("Orçamento emitido pelo sistema FORTAL TECH.",10,289);doc.save(`ORCAMENTO-${d.quoteNumber}.pdf`);toast("PDF do orçamento gerado");
-}
-
-function showTab(t){
-document.getElementById("formTab").classList.toggle("hidden",t!=="form");
-document.getElementById("clientsTab").classList.toggle("hidden",t!=="clients");
-document.getElementById("historyTab").classList.toggle("hidden",t!=="history");
-document.getElementById("quoteTab").classList.toggle("hidden",t!=="quote");
-if(t==="history")renderHistory();
-if(t==="clients"){renderClients();}
-if(t==="form"){populateClientSelect();}
-if(t==="quote"){populateQuoteClientSelect();renderQuotes();if(!val("quoteNumber"))newQuote();else updateQuoteTotals();}
-}
-
-function getClients(){
-  return JSON.parse(localStorage.getItem("clientsList")||"[]");
-}
-function setClients(arr){
-  localStorage.setItem("clientsList",JSON.stringify(arr));
-}
-function clearClientForm(){
-  ["newClientName","newClientDocument","newClientAddress","newClientPhone","newClientResponsible","newClientEmail"].forEach(id=>set(id,""));
-}
-function saveClient(){
-  const name=val("newClientName").trim();
-  if(!name){toast("Informe o nome do cliente/condomínio");return}
-  const clients=getClients();
-  const id=crypto.randomUUID?crypto.randomUUID():String(Date.now());
-  clients.push({
-    id,name,
-    document:val("newClientDocument"),
-    address:val("newClientAddress"),
-    phone:val("newClientPhone"),
-    responsible:val("newClientResponsible"),
-    email:val("newClientEmail")
-  });
-  setClients(clients);
-  clearClientForm();
-  renderClients();
-  populateClientSelect();
-  populateQuoteClientSelect();
-  toast("Cliente cadastrado com sucesso");
-}
-function editClient(id){
-  const c=getClients().find(x=>x.id===id); if(!c)return;
-  set("newClientName",c.name); set("newClientDocument",c.document); set("newClientAddress",c.address);
-  set("newClientPhone",c.phone); set("newClientResponsible",c.responsible); set("newClientEmail",c.email);
-  setClients(getClients().filter(x=>x.id!==id));
-  renderClients(); populateClientSelect(); populateQuoteClientSelect();
-  window.scrollTo({top:0,behavior:"smooth"});
-  toast("Cliente carregado para edição. Salve novamente.");
-}
-function deleteClient(id){
-  const c=getClients().find(x=>x.id===id); if(!c)return;
-  if(!confirm("Excluir o cliente \""+c.name+"\"?"))return;
-  setClients(getClients().filter(x=>x.id!==id));
-  renderClients(); populateClientSelect();
-  toast("Cliente excluído");
-}
-function renderClients(){
-  const q=val("clientSearch").toLowerCase();
-  const arr=getClients().filter(c=>JSON.stringify(c).toLowerCase().includes(q));
-  const el=document.getElementById("clientsList"); if(!el)return;
-  el.innerHTML=arr.length?arr.map(c=>`<div class="history-item">
-    <div><b>${esc(c.name)}</b><br><span class="small">${esc(c.document||"")} ${c.phone?"• "+esc(c.phone):""}<br>${esc(c.address||"")}</span></div>
-    <div><button type="button" onclick="editClient('${c.id}')">✏️ Editar</button>
-    <button type="button" class="danger" onclick="deleteClient('${c.id}')">Excluir</button></div>
-  </div>`).join(""):"Nenhum cliente cadastrado.";
-}
-function populateClientSelect(){
-  const el=document.getElementById("clientSelect"); if(!el)return;
-  const current=el.value;
-  const arr=getClients();
-  el.innerHTML='<option value="">— Selecione um cliente cadastrado —</option>'+arr.map(c=>`<option value="${c.id}">${esc(c.name)}${c.document?" — "+esc(c.document):""}</option>`).join("");
-  if(arr.some(c=>c.id===current))el.value=current;
-}
-function selectClientForOS(){
-  const id=val("clientSelect"); if(!id)return;
-  const c=getClients().find(x=>x.id===id); if(!c)return;
-  set("client",c.name); set("document",c.document); set("address",c.address);
-  set("phone",c.phone); set("responsible",c.responsible);
-}
-
-function loadOS(num){const d=JSON.parse(localStorage.getItem("osList")||"[]").find(x=>x.osNumber===num);if(!d)return;set("osNumber",d.osNumber);Object.keys(d).forEach(k=>{if(document.getElementById(k)&&typeof d[k]==="string")set(k,d[k])});for(const g of Object.keys(lists)){document.querySelectorAll(`input[data-group="${g}"]`).forEach(c=>c.checked=(d[g]||[]).includes(c.value))}document.querySelectorAll('#systems input').forEach(c=>c.checked=(d.systems||[]).includes(c.value));updateSystemChecklists();updateServiceTypeSection();document.getElementById("materials").innerHTML="";(d.materials||[]).forEach(addMaterial);window.currentPhotos=d.photos||[];renderPhotos();showTab("form");toast("OS carregada")}
-document.getElementById("photoInput").addEventListener("change",async e=>{window.currentPhotos=window.currentPhotos||[];for(const f of e.target.files){const r=new FileReader();r.onload=()=>{window.currentPhotos.push(r.result);renderPhotos()};r.readAsDataURL(f)}});
-function renderPhotos(){document.getElementById("photoGrid").innerHTML=(window.currentPhotos||[]).map((p,i)=>`<div class="photo-card"><img src="${p}"><button type="button" class="danger" onclick="currentPhotos.splice(${i},1);renderPhotos()">Excluir</button></div>`).join("")}
-function line(doc,label,value,x,y,w){doc.setFontSize(8);doc.setFont(undefined,"bold");doc.text(label,x,y);doc.setFont(undefined,"normal");let lines=doc.splitTextToSize(value||"—",w);doc.text(lines,x,y+4);return y+4+lines.length*3.8}
-function section(doc,title,y){if(y>275){doc.addPage();y=15}doc.setFillColor(11,18,32);doc.setTextColor(255);doc.rect(10,y-5,190,7,"F");doc.setFontSize(10);doc.setFont(undefined,"bold");doc.text(title,12,y);doc.setTextColor(0);return y+7}
-async function generatePDF(){
-saveOS();const d=collect();const {jsPDF}=window.jspdf;const doc=new jsPDF({unit:"mm",format:"a4"});let y=16;
-doc.setFontSize(15);doc.setFont(undefined,"bold");doc.text("FORTAL TECH – MANUTENÇÃO PREVENTIVA E CORRETIVA",10,y);y+=8;doc.setFontSize(9);doc.setFont(undefined,"normal");doc.text(`OS Nº ${d.osNumber}   Data: ${d.osDate}   Visita: ${d.visitDate}   Status: ${d.status}`,10,y);y+=7;
-y=section(doc,"DADOS DO CLIENTE",y);y=line(doc,"Cliente/Condomínio",d.client,10,y,90);y=line(doc,"CNPJ/CPF",d.document,105,y-4,90);y=line(doc,"Endereço",d.address,10,y,120);y=line(doc,"Telefone",d.phone,135,y-4,55);y=line(doc,"Responsável",d.responsible,10,y,90);y=line(doc,"Técnico responsável",d.technician,105,y-4,90);y=line(doc,"Tipo / Prioridade",d.serviceType+" / "+d.priority,10,y,90);
-y=section(doc,"SOLICITAÇÃO / MOTIVO",y+3);y=line(doc,"Descrição",d.request,10,y,190);y=line(doc,"Sistemas envolvidos",d.systems.join(", ")+(d.otherSystem?" / "+d.otherSystem:""),10,y+2,190);
-const groups=[];
-if(d.systems.includes("CFTV")) groups.push(["CFTV",d.cftvChecks]);
-if(d.systems.includes("Controle de Acesso")) {groups.push(["CONTROLE DE ACESSO – EQUIPAMENTOS",d.accessEquip]);groups.push(["CONTROLE DE ACESSO – TESTES",d.accessTests]);}
-if(d.systems.includes("Cerca Elétrica")) groups.push(["CERCA ELÉTRICA",d.fenceChecks]);
-if(d.systems.includes("Sistema de Alarme")) {groups.push(["ALARME – CENTRAL",d.alarmCentral]);groups.push(["ALARME – SENSORES",d.alarmSensors]);groups.push(["ALARME – COMUNICAÇÃO",d.alarmComm]);}
-if(d.systems.includes("Infraestrutura/Rede")) groups.push(["INFRAESTRUTURA / REDE / ALIMENTAÇÃO",d.infraChecks]);
-if(d.systems.includes("Fonte/Nobreak")) groups.push(["FONTE/NOBREAK",d.sourceChecks]);
-for(const [t,a] of groups){y=section(doc,t,y+3);y=line(doc,"Itens verificados",a.length?a.map(v=>"✓ "+v).join(" | "):"Nenhum item marcado",10,y,190);if(y>270){doc.addPage();y=15}}
-if(d.systems.includes("Outro")) {y=section(doc,"OUTRO SISTEMA – "+(d.otherSystem||"Não informado"),y+3);y=line(doc,"Itens verificados",d.otherChecks,10,y,190);y=line(doc,"Irregularidades",d.otherIssues,10,y,190);y=line(doc,"Observações",d.otherObs,10,y,190);}
-const pdfServiceBlocks={
-"Manutenção Corretiva":()=>{y=section(doc,"MANUTENÇÃO CORRETIVA",y+3);for(const [l,k] of [["Problema relatado","problem"],["Diagnóstico técnico","diagnosis"],["Causa identificada","cause"],["Serviço executado","serviceDone"],["Equipamento/peça substituída","replaced"],["Teste após reparo","repairTest"]])y=line(doc,l,d[k],10,y,190);y=line(doc,"Resultado",d.repairResults.join(", "),10,y+2,190);},
-"Manutenção Preventiva":()=>{y=section(doc,"MANUTENÇÃO PREVENTIVA",y+3);for(const [l,k] of [["Objetivo / serviço programado","preventiveObjective"],["Atividades preventivas realizadas","preventiveActivities"],["Condição encontrada","preventiveCondition"],["Recomendações","preventiveRecommendations"]])y=line(doc,l,d[k],10,y,190);y=line(doc,"Resultado",d.preventiveResults.join(", "),10,y+2,190);},
-"Visita Técnica":()=>{y=section(doc,"VISITA TÉCNICA",y+3);for(const [l,k] of [["Motivo da visita","visitReason"],["Avaliação técnica","visitEvaluation"],["Constatações","visitFindings"],["Recomendações técnicas","visitRecommendations"]])y=line(doc,l,d[k],10,y,190);y=line(doc,"Resultado",d.visitResults.join(", "),10,y+2,190);},
-"Retorno":()=>{y=section(doc,"RETORNO",y+3);y=line(doc,"Nº da OS anterior",d.returnPreviousOS,10,y,190);for(const [l,k] of [["Motivo do retorno","returnReason"],["Pendência / serviço anterior","returnPending"],["Ação realizada no retorno","returnAction"]])y=line(doc,l,d[k],10,y,190);y=line(doc,"Resultado",d.returnResults.join(", "),10,y+2,190);},
-"Emergencial":()=>{y=section(doc,"ATENDIMENTO EMERGENCIAL",y+3);for(const [l,k] of [["Situação emergencial","emergencySituation"],["Impacto / risco","emergencyImpact"],["Ação imediata executada","emergencyAction"],["Equipamento/peça substituída","emergencyReplaced"],["Pendência após atendimento","emergencyPending"]])y=line(doc,l,d[k],10,y,190);y=line(doc,"Resultado",d.emergencyResults.join(", "),10,y+2,190);}
-};
-if(pdfServiceBlocks[d.serviceType]) pdfServiceBlocks[d.serviceType]();
-y=section(doc,"MATERIAIS / PEÇAS",y+3);(d.materials||[]).forEach((m,i)=>{y=line(doc,`${i+1}. ${m.desc}`,String(m.qty||""),10,y,190)});
-y=section(doc,"PENDÊNCIAS / RECOMENDAÇÕES",y+3);y=line(doc,"Pendências",d.pending,10,y,190);y=line(doc,"Recomendações",d.recommendations,10,y);y=line(doc,"Orçamento adicional",d.extraQuote+" — "+d.quoteDescription,10,y);y=line(doc,"Prazo recomendado",d.deadline,10,y);
-y=section(doc,"CONDIÇÃO FINAL",y+3);y=line(doc,"Condição",d.finalCondition.join(", "),10,y,190);y=line(doc,"Observações finais",d.finalObs,10,y);
-if(y>220){doc.addPage();y=15}y=section(doc,"ACEITE DO SERVIÇO",y+4);y=line(doc,"Responsável pelo cliente",d.clientSignName+" — "+d.clientRole,10,y,90);y=line(doc,"Técnico responsável",d.techSignName,105,y-4,90);
-if(d.clientSignature&&d.clientSignature.length>1000)doc.addImage(d.clientSignature,"PNG",10,y+2,80,35);if(d.techSignature&&d.techSignature.length>1000)doc.addImage(d.techSignature,"PNG",110,y+2,80,35);y+=42;
-y=line(doc,"Data do aceite",d.clientSignDate,10,y,90);y=line(doc,"Data do técnico",d.techSignDate,105,y-4,90);y=section(doc,"OBSERVAÇÃO",y+4);y=line(doc,"",d.generalNote,10,y,190);y=line(doc,"OS encerrada em",d.closedDate+" às "+d.closedTime,10,y+2,190);
-doc.setFontSize(7);doc.text("Documento gerado pelo sistema de FORTAL TECH.",10,289);doc.save(`OS-${d.osNumber}.pdf`);toast("PDF gerado")}
-populate();
-document.querySelectorAll("#systems input[data-system]").forEach(cb=>cb.addEventListener("change",updateSystemChecklists));
-document.getElementById("serviceType").addEventListener("change",updateServiceTypeSection);
-setupCanvas("clientCanvas");setupCanvas("techCanvas");newOS();updateSystemChecklists();updateServiceTypeSection();populateQuoteClientSelect();newQuote();
 
 
+// ============================================================
+// 3. VARIÁVEIS
+// ============================================================
 
-// ================= PWA / INSTALAÇÃO =================
-let deferredInstallPrompt = null;
+let db = null;
+let deferredPrompt = null;
+let currentUser = null;
 
-function isStandalone() {
-  return window.matchMedia("(display-mode: standalone)").matches ||
-         window.navigator.standalone === true;
+
+// ============================================================
+// 4. FUNÇÕES BÁSICAS
+// ============================================================
+
+function uid() {
+  return crypto.randomUUID
+    ? crypto.randomUUID()
+    : Date.now() + "-" + Math.random().toString(16).slice(2);
 }
 
-function installButton() {
-  return document.getElementById("installBtn");
+
+function isoToday() {
+  return new Date().toISOString().slice(0, 10);
 }
 
-function showInstallButton(show) {
-  const btn = installButton();
-  if (!btn) return;
-  btn.style.display = show ? "inline-block" : "none";
-}
 
-window.addEventListener("beforeinstallprompt", (event) => {
-  // Chrome só dispara este evento quando decidiu que a PWA pode ser
-  // instalada pelo prompt programático.
-  event.preventDefault();
-  deferredInstallPrompt = event;
-  showInstallButton(true);
-  console.log("PWA: prompt de instalação disponível.");
-});
+function load() {
 
-window.addEventListener("appinstalled", () => {
-  deferredInstallPrompt = null;
-  showInstallButton(false);
-  if (typeof toast === "function") toast("FORTAL TECH instalada!");
-});
+  try {
 
-async function installApp() {
-  if (deferredInstallPrompt) {
-    deferredInstallPrompt.prompt();
-    const result = await deferredInstallPrompt.userChoice;
-    deferredInstallPrompt = null;
+    const raw = localStorage.getItem(KEY);
 
-    if (result && result.outcome === "accepted") {
-      showInstallButton(false);
+    if (raw) {
+      return JSON.parse(raw);
     }
+
+  } catch (e) {
+
+    console.error("Erro ao carregar dados locais:", e);
+
+  }
+
+  return {
+    origins: DEFAULT.origins.map(x => ({
+      id: uid(),
+      name: x
+    })),
+
+    reasons: DEFAULT.reasons.map(x => ({
+      id: uid(),
+      name: x
+    })),
+
+    foods: DEFAULT.foods.map(x => ({
+      id: uid(),
+      name: x
+    })),
+
+    people: DEFAULT.people,
+
+    entries: [],
+
+    movements: [],
+
+    attendance: {}
+  };
+}
+
+
+function save() {
+
+  try {
+
+    localStorage.setItem(
+      KEY,
+      JSON.stringify(db)
+    );
+
+  } catch (e) {
+
+    console.error("Erro ao salvar:", e);
+
+  }
+}
+
+
+// ============================================================
+// 4.1 CARREGAMENTO DOS DADOS DO SUPABASE
+// ============================================================
+
+async function loadFromSupabase() {
+
+  if (!currentUser) {
+    throw new Error("Usuário não autenticado.");
+  }
+
+  console.log("Carregando dados do Supabase...");
+
+  try {
+
+    // ----------------------------------------------------------
+    // PESSOAS
+    // ----------------------------------------------------------
+
+    const { data: people, error: peopleError } =
+      await supabaseClient
+        .from("Pessoas")
+        .select("*")
+        .eq("usuario_id", currentUser.id)
+        .order("nome");
+
+    if (peopleError) throw peopleError;
+
+
+    // ----------------------------------------------------------
+    // ALIMENTOS
+    // ----------------------------------------------------------
+
+    const { data: foods, error: foodsError } =
+      await supabaseClient
+        .from("Alimentos")
+        .select("*")
+        .eq("usuario_id", currentUser.id)
+        .order("nome");
+
+    if (foodsError) throw foodsError;
+
+
+    // ----------------------------------------------------------
+    // ORIGENS
+    // ----------------------------------------------------------
+
+    const { data: origins, error: originsError } =
+      await supabaseClient
+        .from("origens")
+        .select("*")
+        .eq("usuario_id", currentUser.id)
+        .order("nome");
+
+    if (originsError) throw originsError;
+
+
+    // ----------------------------------------------------------
+    // ENTRADAS
+    // ----------------------------------------------------------
+
+    const { data: entries, error: entriesError } =
+      await supabaseClient
+        .from("entradas")
+        .select("*")
+        .eq("usuario_id", currentUser.id)
+        .order("data_entrada", { ascending: false });
+
+    if (entriesError) throw entriesError;
+
+
+    // ----------------------------------------------------------
+    // SAÍDAS
+    // ----------------------------------------------------------
+
+    const { data: outputs, error: outputsError } =
+      await supabaseClient
+        .from("saídas")
+        .select("*")
+        .eq("usuario_id", currentUser.id)
+        .order("data_saida", { ascending: false });
+
+    if (outputsError) throw outputsError;
+
+
+    // ----------------------------------------------------------
+    // PERDAS
+    // ----------------------------------------------------------
+
+    const { data: losses, error: lossesError } =
+      await supabaseClient
+        .from("perdas")
+        .select("*")
+        .eq("usuario_id", currentUser.id)
+        .order("data_perda", { ascending: false });
+
+    if (lossesError) throw lossesError;
+
+
+    // ----------------------------------------------------------
+    // PRESENÇA
+    // ----------------------------------------------------------
+
+    const { data: attendanceRows, error: attendanceError } =
+      await supabaseClient
+        .from("presença")
+        .select("*")
+        .eq("usuario_id", currentUser.id)
+        .order("data", { ascending: false });
+
+    if (attendanceError) throw attendanceError;
+
+
+    // ----------------------------------------------------------
+    // MOTIVOS
+    // Não existe tabela de motivos no Supabase neste momento.
+    // Portanto, os motivos permanecem no cadastro local do app.
+    // ----------------------------------------------------------
+
+    const reasons = DEFAULT.reasons.map(name => ({
+      id: name,
+      name
+    }));
+
+
+    // ----------------------------------------------------------
+    // CONVERSÃO PARA O FORMATO QUE O APP JÁ UTILIZA
+    // ----------------------------------------------------------
+
+    const dbSupabase = {
+
+      people: (people || []).map(p => ({
+        id: p.id,
+        name: p.nome,
+        registration: p["matrícula"]
+      })),
+
+      foods: (foods || []).map(f => ({
+        id: f.id,
+        name: f.nome
+      })),
+
+      origins: (origins || []).map(o => ({
+        id: o.id,
+        name: o.nome
+      })),
+
+      entries: (entries || []).map(e => ({
+        id: e.id,
+        date: e.data_entrada,
+        foodId: e.alimento_id,
+        qty: Number(e.quantidade || 0),
+        originId: e.origem_id,
+        note: "",
+        createdAt: e.created_at || new Date().toISOString()
+      })),
+
+      movements: [
+
+        ...(outputs || []).map(s => ({
+          id: "saida-" + s.id,
+          date: s.data_saida,
+          type: "saida",
+          foodId: s.alimento_id,
+          qty: Number(s.quantidade || 0),
+          originId: s.origem_id,
+          reasonId: null,
+          note: s.destino || "",
+          createdAt: s.created_at || new Date().toISOString()
+        })),
+
+        ...(losses || []).map(p => ({
+          id: "perda-" + p.id,
+          date: p.data_perda,
+          type: "perda",
+          foodId: p.alimento_id,
+          qty: Number(p.quantidade || 0),
+          originId: p.origem_id,
+          reasonId: reasons.find(r => r.name === p.motivo)?.id || p.motivo || null,
+          note: "",
+          createdAt: p.created_at || new Date().toISOString()
+        }))
+
+      ],
+
+      attendance: {},
+
+      reasons
+    };
+
+
+    // ----------------------------------------------------------
+    // ORGANIZAR PRESENÇA POR DATA
+    // ----------------------------------------------------------
+
+    (attendanceRows || []).forEach(row => {
+
+      if (!dbSupabase.attendance[row.data]) {
+        dbSupabase.attendance[row.data] = [];
+      }
+
+      if (row.present) {
+        dbSupabase.attendance[row.data].push(row.pessoa_id);
+      }
+
+    });
+
+
+    console.log("Dados carregados do Supabase:", dbSupabase);
+
+    return dbSupabase;
+
+  } catch (error) {
+
+    console.error("Erro ao carregar dados do Supabase:", error);
+
+    throw error;
+  }
+
+}
+
+
+function esc(s) {
+
+  return String(s ?? "").replace(
+    /[&<>"']/g,
+    m => ({
+      "&": "&amp;",
+      "<": "&lt;",
+      ">": "&gt;",
+      '"': "&quot;",
+      "'": "&#039;"
+    }[m])
+  );
+
+}
+
+
+function fmt(n) {
+
+  return Number(n || 0).toLocaleString(
+    "pt-BR",
+    {
+      maximumFractionDigits: 2
+    }
+  );
+
+}
+
+
+function fmtDate(d) {
+
+  return d
+    ? new Date(d + "T12:00:00").toLocaleDateString("pt-BR")
+    : "";
+
+}
+
+
+function getName(arr, id) {
+
+  return arr.find(x => x.id === id)?.name || "—";
+
+}
+
+
+function toast(msg) {
+
+  const el = document.getElementById("toast");
+
+  if (!el) return;
+
+  el.textContent = msg;
+
+  el.classList.add("show");
+
+  clearTimeout(window._toast);
+
+  window._toast = setTimeout(
+    () => el.classList.remove("show"),
+    2400
+  );
+
+}
+
+
+// ============================================================
+// 5. TELA DE LOGIN
+// ============================================================
+
+function createLoginScreen() {
+
+  if (document.getElementById("loginScreen")) {
     return;
   }
 
-  // O Chrome não fornece um método JavaScript para obrigar o prompt.
-  // Quando o evento não está disponível, mostramos o caminho nativo.
-  alert(
-    "O Chrome ainda não liberou o botão automático nesta visita.\n\n" +
-    "Faça assim no Chrome Android:\n\n" +
-    "1. Toque nos três pontos ⋮\n" +
-    "2. Escolha 'Instalar aplicativo' (ou 'Adicionar à tela inicial')\n" +
-    "3. Toque em 'Instalar'\n\n" +
-    "Se aparecer 'Instalar aplicativo', será instalado como PWA."
-  );
-}
+  const style = document.createElement("style");
 
-async function registerPWA() {
-  if (!("serviceWorker" in navigator)) return;
+  style.id = "loginStyle";
 
-  try {
-    const base = "/Controle-de-Atividade/";
-    const regs = await navigator.serviceWorker.getRegistrations();
+  style.textContent = `
 
-    // Remove apenas registros antigos do mesmo projeto.
-    for (const reg of regs) {
-      if (reg.scope.includes(base)) {
-        await reg.unregister();
-      }
+    #loginScreen{
+      position:fixed;
+      inset:0;
+      z-index:99999;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:20px;
+      background:
+        linear-gradient(
+          135deg,
+          #0b3a63 0%,
+          #075486 55%,
+          #0b3a63 100%
+        );
     }
 
-    const reg = await navigator.serviceWorker.register(base + "sw.js", {
-      scope: base,
-      updateViaCache: "none"
+    .login-box{
+      width:min(420px,100%);
+      background:#fff;
+      border-radius:20px;
+      padding:30px;
+      box-shadow:0 20px 60px rgba(0,0,0,.28);
+    }
+
+    .login-logo{
+      text-align:center;
+      margin-bottom:18px;
+    }
+
+    .login-logo img{
+      width:150px;
+      max-width:70%;
+      height:auto;
+    }
+
+    .login-title{
+      text-align:center;
+      color:#0b3a63;
+      font-size:27px;
+      font-weight:900;
+      margin:5px 0;
+    }
+
+    .login-subtitle{
+      text-align:center;
+      color:#667085;
+      font-size:14px;
+      margin-bottom:25px;
+    }
+
+    .login-box label{
+      display:flex;
+      flex-direction:column;
+      gap:6px;
+      margin-bottom:14px;
+      font-size:13px;
+      font-weight:800;
+      color:#344054;
+    }
+
+    .login-box input{
+      width:100%;
+      padding:13px;
+      border:1px solid #d9e1e8;
+      border-radius:10px;
+      font-size:15px;
+      outline:none;
+      box-sizing:border-box;
+    }
+
+    .login-box input:focus{
+      border-color:#1467a8;
+      box-shadow:0 0 0 3px rgba(20,103,168,.12);
+    }
+
+    .login-button{
+      width:100%;
+      padding:13px;
+      margin-top:8px;
+      border:0;
+      border-radius:10px;
+      background:#0b3a63;
+      color:#fff;
+      font-weight:900;
+      font-size:15px;
+      cursor:pointer;
+    }
+
+    .login-button:hover{
+      filter:brightness(1.08);
+    }
+
+    .login-button:disabled{
+      opacity:.65;
+      cursor:not-allowed;
+    }
+
+    .login-error{
+      display:none;
+      margin-top:14px;
+      padding:11px;
+      border-radius:9px;
+      background:#fdeceb;
+      color:#b42318;
+      font-size:13px;
+      font-weight:700;
+    }
+
+    .login-error.show{
+      display:block;
+    }
+
+    .login-loading{
+      text-align:center;
+      color:#667085;
+      font-size:13px;
+      margin-top:12px;
+    }
+
+    .user-bar{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      margin-left:auto;
+    }
+
+    .user-email{
+      font-size:12px;
+      opacity:.9;
+    }
+
+    .logout-btn{
+      border:1px solid rgba(255,255,255,.35);
+      background:rgba(255,255,255,.12);
+      color:#fff;
+      border-radius:8px;
+      padding:8px 11px;
+      cursor:pointer;
+      font-weight:800;
+    }
+
+    .logout-btn:hover{
+      background:rgba(255,255,255,.22);
+    }
+
+    @media(max-width:700px){
+
+      .login-box{
+        padding:24px 20px;
+      }
+
+      .login-title{
+        font-size:24px;
+      }
+
+      .user-email{
+        display:none;
+      }
+
+    }
+
+  `;
+
+  document.head.appendChild(style);
+
+
+  const login = document.createElement("div");
+
+  login.id = "loginScreen";
+
+  login.innerHTML = `
+
+    <div class="login-box">
+
+      <div class="login-logo">
+        <img src="ace-cesta.png" alt="ACE">
+      </div>
+
+      <div class="login-title">
+        ACE Ação de Cestas
+      </div>
+
+      <div class="login-subtitle">
+        Controle de Alimentos
+      </div>
+
+      <form id="loginForm">
+
+        <label>
+          E-mail
+          <input
+            id="loginEmail"
+            type="email"
+            placeholder="Digite seu e-mail"
+            autocomplete="username"
+            required
+          >
+        </label>
+
+        <label>
+          Senha
+          <input
+            id="loginPassword"
+            type="password"
+            placeholder="Digite sua senha"
+            autocomplete="current-password"
+            required
+          >
+        </label>
+
+        <button
+          id="loginButton"
+          class="login-button"
+          type="submit"
+        >
+          🔐 Entrar
+        </button>
+
+        <div
+          id="loginError"
+          class="login-error"
+        ></div>
+
+        <div
+          id="loginLoading"
+          class="login-loading"
+        ></div>
+
+      </form>
+
+    </div>
+
+  `;
+
+  document.body.appendChild(login);
+
+
+  document
+    .getElementById("loginForm")
+    .addEventListener("submit", loginUser);
+
+}
+
+
+async function loginUser(e) {
+
+  e.preventDefault();
+
+  const email =
+    document.getElementById("loginEmail").value.trim();
+
+  const password =
+    document.getElementById("loginPassword").value;
+
+  const button =
+    document.getElementById("loginButton");
+
+  const error =
+    document.getElementById("loginError");
+
+  const loading =
+    document.getElementById("loginLoading");
+
+
+  error.classList.remove("show");
+
+  error.textContent = "";
+
+  button.disabled = true;
+
+  button.textContent = "Entrando...";
+
+  loading.textContent = "Autenticando...";
+
+
+  try {
+
+    const { data, error: authError } =
+      await supabaseClient.auth.signInWithPassword({
+        email,
+        password
+      });
+
+
+    if (authError) {
+      throw authError;
+    }
+
+
+    currentUser = data.user;
+
+    document
+      .getElementById("loginScreen")
+      .remove();
+
+    initApp();
+
+  } catch (err) {
+
+    console.error(err);
+
+    error.textContent =
+      traduzirErroLogin(err);
+
+    error.classList.add("show");
+
+    button.disabled = false;
+
+    button.textContent = "🔐 Entrar";
+
+    loading.textContent = "";
+
+  }
+
+}
+
+
+function traduzirErroLogin(err) {
+
+  const msg = String(
+    err?.message || ""
+  ).toLowerCase();
+
+
+  if (
+    msg.includes("invalid login credentials")
+  ) {
+    return "E-mail ou senha incorretos.";
+  }
+
+
+  if (
+    msg.includes("email not confirmed")
+  ) {
+    return "Este e-mail ainda não foi confirmado.";
+  }
+
+
+  if (
+    msg.includes("too many requests")
+  ) {
+    return "Muitas tentativas. Aguarde um pouco e tente novamente.";
+  }
+
+
+  if (!msg) {
+    return "Não foi possível realizar o login.";
+  }
+
+
+  return err.message;
+
+}
+
+
+// ============================================================
+// 6. CONTROLE DO USUÁRIO LOGADO
+// ============================================================
+
+function addUserBar() {
+
+  const header =
+    document.querySelector(".ace-header-v6");
+
+  if (!header || !currentUser) {
+    return;
+  }
+
+
+  if (document.getElementById("userBar")) {
+    return;
+  }
+
+
+  const bar = document.createElement("div");
+
+  bar.id = "userBar";
+
+  bar.className = "user-bar";
+
+
+  bar.innerHTML = `
+
+    <span class="user-email">
+      ${esc(currentUser.email)}
+    </span>
+
+    <button
+      id="logoutBtn"
+      class="logout-btn"
+      type="button"
+    >
+      🚪 Sair
+    </button>
+
+  `;
+
+
+  header.appendChild(bar);
+
+
+  document
+    .getElementById("logoutBtn")
+    .addEventListener(
+      "click",
+      logoutUser
+    );
+
+}
+
+
+async function logoutUser() {
+
+  const ok =
+    confirm("Deseja sair do sistema?");
+
+  if (!ok) return;
+
+
+  const { error } =
+    await supabaseClient.auth.signOut();
+
+
+  if (error) {
+
+    console.error(error);
+
+    toast("Não foi possível sair.");
+
+    return;
+
+  }
+
+
+  location.reload();
+
+}
+
+
+// ============================================================
+// 7. SELECTS
+// ============================================================
+
+function populateSelect(
+  id,
+  arr,
+  placeholder = "Selecione..."
+) {
+
+  const el =
+    document.getElementById(id);
+
+  if (!el) return;
+
+
+  el.innerHTML =
+    `<option value="">${placeholder}</option>` +
+    arr
+      .map(
+        x =>
+          `<option value="${x.id}">
+            ${esc(x.name)}
+          </option>`
+      )
+      .join("");
+
+}
+
+
+function setDates() {
+
+  [
+    "entryDate",
+    "movementDate",
+    "dashboardDate",
+    "attendanceDate"
+  ].forEach(id => {
+
+    const e =
+      document.getElementById(id);
+
+    if (e) {
+      e.value = isoToday();
+    }
+
+  });
+
+
+  const start =
+    document.getElementById("reportStart");
+
+  const end =
+    document.getElementById("reportEnd");
+
+
+  if (start) {
+    start.value = isoToday();
+  }
+
+
+  if (end) {
+    end.value = isoToday();
+  }
+
+}
+
+
+function refreshSelects() {
+
+  populateSelect(
+    "entryOrigin",
+    db.origins
+  );
+
+  populateSelect(
+    "movementOrigin",
+    db.origins
+  );
+
+  populateSelect(
+    "entryFood",
+    db.foods
+  );
+
+  populateSelect(
+    "movementFood",
+    db.foods
+  );
+
+  populateSelect(
+    "movementReason",
+    db.reasons
+  );
+
+
+  const reportOrigin =
+    document.getElementById(
+      "reportOrigin"
+    );
+
+
+  if (reportOrigin) {
+
+    reportOrigin.innerHTML =
+      '<option value="">Todas</option>' +
+      db.origins
+        .map(
+          x =>
+            `<option value="${x.id}">
+              ${esc(x.name)}
+            </option>`
+        )
+        .join("");
+
+  }
+
+}
+
+
+// ============================================================
+// 8. ESTOQUE
+// ============================================================
+
+function calcStock() {
+
+  const stock = {};
+
+  db.origins.forEach(
+    o => stock[o.id] = {}
+  );
+
+
+  db.foods.forEach(food => {
+
+    db.origins.forEach(origin => {
+
+      stock[origin.id][food.id] = 0;
+
     });
 
-    await reg.update();
-    await navigator.serviceWorker.ready;
-    console.log("PWA Service Worker ativo:", reg.scope);
+  });
+
+
+  db.entries.forEach(entry => {
+
+    if (
+      stock[entry.originId] &&
+      stock[entry.originId][entry.foodId] != null
+    ) {
+
+      stock[entry.originId][entry.foodId] +=
+        Number(entry.qty);
+
+    }
+
+  });
+
+
+  db.movements.forEach(movement => {
+
+    if (
+      stock[movement.originId] &&
+      stock[movement.originId][movement.foodId] != null
+    ) {
+
+      stock[movement.originId][movement.foodId] -=
+        Number(movement.qty);
+
+    }
+
+  });
+
+
+  return stock;
+
+}
+
+
+// ============================================================
+// 9. DASHBOARD
+// ============================================================
+
+function renderDashboard() {
+
+  const date =
+    document.getElementById(
+      "dashboardDate"
+    )?.value || isoToday();
+
+
+  const todayLabel =
+    document.getElementById(
+      "todayLabel"
+    );
+
+  if (todayLabel) {
+    todayLabel.textContent =
+      fmtDate(date);
+  }
+
+
+  const ent =
+    db.entries
+      .filter(x => x.date === date)
+      .reduce(
+        (s, x) =>
+          s + Number(x.qty),
+        0
+      );
+
+
+  const sai =
+    db.movements
+      .filter(
+        x =>
+          x.date === date &&
+          x.type === "saida"
+      )
+      .reduce(
+        (s, x) =>
+          s + Number(x.qty),
+        0
+      );
+
+
+  const per =
+    db.movements
+      .filter(
+        x =>
+          x.date === date &&
+          x.type === "perda"
+      )
+      .reduce(
+        (s, x) =>
+          s + Number(x.qty),
+        0
+      );
+
+
+  const st = calcStock();
+
+
+  const estoque =
+    Object.values(st)
+      .reduce(
+        (a, o) =>
+          a +
+          Object.values(o)
+            .reduce(
+              (x, v) =>
+                x + Number(v),
+              0
+            ),
+        0
+      );
+
+
+  const pres =
+    (db.attendance[date] || [])
+      .filter(Boolean)
+      .length;
+
+
+  const ids = [
+    ["kpiEntrada", ent],
+    ["kpiSaida", sai],
+    ["kpiPerda", per],
+    ["kpiEstoque", estoque],
+    ["kpiPresentes", pres]
+  ];
+
+
+  ids.forEach(([id, value]) => {
+
+    const el =
+      document.getElementById(id);
+
+    if (el) {
+      el.textContent = fmt(value);
+    }
+
+  });
+
+
+  const originSummary =
+    document.getElementById(
+      "originSummary"
+    );
+
+
+  if (originSummary) {
+
+    originSummary.innerHTML =
+      db.origins
+        .map(o => {
+
+          const total =
+            Object.values(
+              st[o.id] || {}
+            ).reduce(
+              (a, v) =>
+                a + Number(v),
+              0
+            );
+
+
+          return `
+            <div class="origin-box">
+
+              <div class="origin-title">
+
+                <span>
+                  📍 ${esc(o.name)}
+                </span>
+
+                <span class="badge">
+                  ${fmt(total)}
+                </span>
+
+              </div>
+
+              <div class="origin-value">
+                ${fmt(total)} itens
+              </div>
+
+            </div>
+          `;
+
+        })
+        .join("");
+
+  }
+
+
+  const recent =
+    document.getElementById(
+      "recentMovements"
+    );
+
+
+  if (recent) {
+
+    const all = [
+
+      ...db.entries.map(x => ({
+        ...x,
+        kind: "Entrada",
+        sign: "+",
+        color: "green"
+      })),
+
+      ...db.movements.map(x => ({
+        ...x,
+        kind:
+          x.type === "perda"
+            ? "Perda"
+            : "Saída",
+        sign: "-",
+        color:
+          x.type === "perda"
+            ? "red"
+            : "blue"
+      }))
+
+    ]
+      .sort(
+        (a, b) =>
+          (b.createdAt || "")
+            .localeCompare(
+              a.createdAt || ""
+            )
+      )
+      .slice(0, 8);
+
+
+    recent.innerHTML =
+      all.length
+
+        ? all.map(x => `
+
+            <div class="recent-item">
+
+              <b>
+                ${x.sign}
+                ${fmt(x.qty)}
+                —
+                ${esc(
+                  getName(
+                    db.foods,
+                    x.foodId
+                  )
+                )}
+              </b>
+
+              <small>
+                ${x.kind}
+                •
+                ${esc(
+                  getName(
+                    db.origins,
+                    x.originId
+                  )
+                )}
+                •
+                ${fmtDate(x.date)}
+              </small>
+
+            </div>
+
+          `).join("")
+
+        : `
+          <div class="empty">
+            Nenhum lançamento ainda.
+          </div>
+        `;
+
+  }
+
+}
+
+
+// ============================================================
+// 10. ENTRADAS
+// ============================================================
+
+function renderEntries() {
+
+  const date =
+    document.getElementById(
+      "entryDate"
+    )?.value || isoToday();
+
+
+  const arr =
+    db.entries
+      .filter(
+        x => x.date === date
+      )
+      .sort(
+        (a, b) =>
+          b.createdAt.localeCompare(
+            a.createdAt
+          )
+      );
+
+
+  const total =
+    arr.reduce(
+      (s, x) =>
+        s + Number(x.qty),
+      0
+    );
+
+
+  const totalEl =
+    document.getElementById(
+      "entryDayTotal"
+    );
+
+
+  if (totalEl) {
+    totalEl.textContent =
+      `Total: ${fmt(total)}`;
+  }
+
+
+  const tableEl =
+    document.getElementById(
+      "entriesTable"
+    );
+
+
+  if (tableEl) {
+
+    tableEl.innerHTML =
+      table(
+        arr,
+        [
+          [
+            "Data",
+            x => fmtDate(x.date)
+          ],
+          [
+            "Origem",
+            x =>
+              esc(
+                getName(
+                  db.origins,
+                  x.originId
+                )
+              )
+          ],
+          [
+            "Alimento",
+            x =>
+              esc(
+                getName(
+                  db.foods,
+                  x.foodId
+                )
+              )
+          ],
+          [
+            "Qtd",
+            x => fmt(x.qty)
+          ],
+          [
+            "Obs.",
+            x => esc(x.note || "")
+          ]
+        ],
+        x => removeEntry(x.id)
+      );
+
+  }
+
+}
+
+
+// ============================================================
+// 11. MOVIMENTAÇÕES
+// ============================================================
+
+function renderMovements() {
+
+  const arr =
+    db.movements
+      .slice()
+      .sort(
+        (a, b) =>
+          b.createdAt.localeCompare(
+            a.createdAt
+          )
+      );
+
+
+  const el =
+    document.getElementById(
+      "movementsTable"
+    );
+
+
+  if (!el) return;
+
+
+  el.innerHTML =
+    table(
+      arr,
+      [
+        [
+          "Data",
+          x => fmtDate(x.date)
+        ],
+
+        [
+          "Tipo",
+          x =>
+            `<span class="pill ${
+              x.type === "perda"
+                ? "red"
+                : "blue"
+            }">
+              ${
+                x.type === "perda"
+                  ? "Perda"
+                  : "Saída"
+              }
+            </span>`
+        ],
+
+        [
+          "Origem",
+          x =>
+            esc(
+              getName(
+                db.origins,
+                x.originId
+              )
+            )
+        ],
+
+        [
+          "Alimento",
+          x =>
+            esc(
+              getName(
+                db.foods,
+                x.foodId
+              )
+            )
+        ],
+
+        [
+          "Qtd",
+          x => fmt(x.qty)
+        ],
+
+        [
+          "Motivo",
+          x =>
+            esc(
+              getName(
+                db.reasons,
+                x.reasonId
+              )
+            )
+        ],
+
+        [
+          "Obs.",
+          x =>
+            esc(x.note || "")
+        ]
+
+      ],
+      x => removeMovement(x.id)
+    );
+
+}
+
+
+// ============================================================
+// 12. TABELA
+// ============================================================
+
+function table(
+  arr,
+  cols,
+  remove
+) {
+
+  if (!arr.length) {
+
+    return `
+      <div class="empty">
+        Nenhum registro encontrado.
+      </div>
+    `;
+
+  }
+
+
+  return `
+
+    <div class="table-wrap">
+
+      <table>
+
+        <thead>
+
+          <tr>
+
+            ${cols
+              .map(
+                c =>
+                  `<th>${c[0]}</th>`
+              )
+              .join("")}
+
+            <th>Ação</th>
+
+          </tr>
+
+        </thead>
+
+        <tbody>
+
+          ${arr.map(x => `
+
+            <tr>
+
+              ${cols
+                .map(
+                  c =>
+                    `<td>${c[1](x)}</td>`
+                )
+                .join("")}
+
+              <td>
+
+                <button
+                  class="btn danger-btn"
+                  data-remove="${x.id}"
+                >
+                  Excluir
+                </button>
+
+              </td>
+
+            </tr>
+
+          `).join("")}
+
+        </tbody>
+
+      </table>
+
+    </div>
+
+  `;
+
+}
+
+
+function removeEntry(id) {
+
+  if (
+    !confirm(
+      "Excluir esta entrada?"
+    )
+  ) return;
+
+
+  db.entries =
+    db.entries.filter(
+      x => x.id !== id
+    );
+
+
+  save();
+
+  renderAll();
+
+  toast(
+    "Entrada excluída."
+  );
+
+}
+
+
+function removeMovement(id) {
+
+  if (
+    !confirm(
+      "Excluir esta movimentação?"
+    )
+  ) return;
+
+
+  db.movements =
+    db.movements.filter(
+      x => x.id !== id
+    );
+
+
+  save();
+
+  renderAll();
+
+  toast(
+    "Movimentação excluída."
+  );
+
+}
+
+
+// ============================================================
+// 13. PRESENÇA
+// ============================================================
+
+function renderAttendance() {
+
+  const date =
+    document.getElementById(
+      "attendanceDate"
+    )?.value || isoToday();
+
+
+  const q =
+    (
+      document.getElementById(
+        "attendanceSearch"
+      )?.value || ""
+    ).toLowerCase();
+
+
+  const set =
+    new Set(
+      db.attendance[date] || []
+    );
+
+
+  const people =
+    db.people.filter(
+      p =>
+        (
+          p.name +
+          " " +
+          p.registration
+        )
+          .toLowerCase()
+          .includes(q)
+    );
+
+
+  const count =
+    document.getElementById(
+      "attendanceCount"
+    );
+
+
+  if (count) {
+    count.textContent =
+      `${set.size} presentes`;
+  }
+
+
+  const list =
+    document.getElementById(
+      "attendanceList"
+    );
+
+
+  if (!list) return;
+
+
+  list.innerHTML =
+    people.length
+
+      ? people
+          .map(
+            p => `
+
+              <div class="attendance-row">
+
+                <div>
+
+                  <div class="person-name">
+                    ${esc(p.name)}
+                  </div>
+
+                  <div class="person-reg">
+                    Matrícula:
+                    ${esc(p.registration)}
+                  </div>
+
+                </div>
+
+                <label class="switch">
+
+                  <input
+                    type="checkbox"
+                    data-person="${p.id}"
+                    ${
+                      set.has(p.id)
+                        ? "checked"
+                        : ""
+                    }
+                  >
+
+                  <span class="slider"></span>
+
+                </label>
+
+              </div>
+
+            `
+          )
+          .join("")
+
+      : `
+        <div class="empty">
+          Nenhuma pessoa cadastrada/encontrada.
+        </div>
+      `;
+
+
+  document
+    .querySelectorAll(
+      "[data-person]"
+    )
+    .forEach(el => {
+
+      el.addEventListener(
+        "change",
+        e => {
+
+          const a =
+            new Set(
+              db.attendance[date] || []
+            );
+
+
+          if (e.target.checked) {
+
+            a.add(
+              e.target.dataset.person
+            );
+
+          } else {
+
+            a.delete(
+              e.target.dataset.person
+            );
+
+          }
+
+
+          db.attendance[date] =
+            [...a];
+
+
+          save();
+
+          renderAttendance();
+
+          renderDashboard();
+
+        }
+      );
+
+    });
+
+}
+
+
+// ============================================================
+// 14. ESTOQUE
+// ============================================================
+
+function renderStock() {
+
+  const st = calcStock();
+
+
+  const cards =
+    document.getElementById(
+      "stockCards"
+    );
+
+
+  if (cards) {
+
+    cards.innerHTML =
+      db.origins
+        .map(o => {
+
+          const total =
+            Object.values(
+              st[o.id] || {}
+            ).reduce(
+              (a, v) =>
+                a + Number(v),
+              0
+            );
+
+
+          return `
+
+            <div class="panel">
+
+              <h3>
+                📍 ${esc(o.name)}
+              </h3>
+
+              <div class="origin-value">
+                ${fmt(total)} itens
+              </div>
+
+            </div>
+
+          `;
+
+        })
+        .join("");
+
+  }
+
+
+  const rows =
+    db.foods
+      .map(food => {
+
+        const vals =
+          db.origins.map(
+            origin =>
+              Number(
+                st[origin.id]?.[
+                  food.id
+                ] || 0
+              )
+          );
+
+
+        const total =
+          vals.reduce(
+            (a, v) =>
+              a + v,
+            0
+          );
+
+
+        return `
+
+          <tr>
+
+            <td>
+              ${esc(food.name)}
+            </td>
+
+            ${vals
+              .map(
+                v =>
+                  `<td>${fmt(v)}</td>`
+              )
+              .join("")}
+
+            <td>
+              <b>${fmt(total)}</b>
+            </td>
+
+          </tr>
+
+        `;
+
+      })
+      .join("");
+
+
+  const tableEl =
+    document.getElementById(
+      "stockTable"
+    );
+
+
+  if (tableEl) {
+
+    tableEl.innerHTML = `
+
+      <div class="table-wrap">
+
+        <table>
+
+          <thead>
+
+            <tr>
+
+              <th>Alimento</th>
+
+              ${db.origins
+                .map(
+                  o =>
+                    `<th>${esc(o.name)}</th>`
+                )
+                .join("")}
+
+              <th>Total</th>
+
+            </tr>
+
+          </thead>
+
+          <tbody>
+
+            ${rows}
+
+          </tbody>
+
+        </table>
+
+      </div>
+
+    `;
+
+  }
+
+}
+
+
+// ============================================================
+// 15. RELATÓRIO
+// ============================================================
+
+function renderReport() {
+
+  const start =
+    document.getElementById(
+      "reportStart"
+    )?.value || "";
+
+  const end =
+    document.getElementById(
+      "reportEnd"
+    )?.value || "";
+
+  const origin =
+    document.getElementById(
+      "reportOrigin"
+    )?.value || "";
+
+
+  const entries =
+    db.entries.filter(
+      x =>
+        (!start || x.date >= start) &&
+        (!end || x.date <= end) &&
+        (!origin || x.originId === origin)
+    );
+
+
+  const mov =
+    db.movements.filter(
+      x =>
+        (!start || x.date >= start) &&
+        (!end || x.date <= end) &&
+        (!origin || x.originId === origin)
+    );
+
+
+  const presentDates =
+    Object.entries(
+      db.attendance
+    ).filter(
+      ([d]) =>
+        (!start || d >= start) &&
+        (!end || d <= end)
+    );
+
+
+  const html = `
+
+    <div class="cards">
+
+      <div class="card">
+
+        <span>Entradas</span>
+
+        <strong>
+          ${fmt(
+            entries.reduce(
+              (s, x) =>
+                s + Number(x.qty),
+              0
+            )
+          )}
+        </strong>
+
+      </div>
+
+      <div class="card">
+
+        <span>Saídas</span>
+
+        <strong>
+          ${fmt(
+            mov
+              .filter(
+                x =>
+                  x.type === "saida"
+              )
+              .reduce(
+                (s, x) =>
+                  s + Number(x.qty),
+                0
+              )
+          )}
+        </strong>
+
+      </div>
+
+      <div class="card danger">
+
+        <span>Perdas</span>
+
+        <strong>
+          ${fmt(
+            mov
+              .filter(
+                x =>
+                  x.type === "perda"
+              )
+              .reduce(
+                (s, x) =>
+                  s + Number(x.qty),
+                0
+              )
+          )}
+        </strong>
+
+      </div>
+
+      <div class="card">
+
+        <span>Dias com presença</span>
+
+        <strong>
+          ${presentDates.length}
+        </strong>
+
+      </div>
+
+    </div>
+
+    <h3>Entradas</h3>
+
+    ${
+      entries.length
+
+        ? table(
+            entries,
+            [
+              [
+                "Data",
+                x => fmtDate(x.date)
+              ],
+              [
+                "Origem",
+                x =>
+                  esc(
+                    getName(
+                      db.origins,
+                      x.originId
+                    )
+                  )
+              ],
+              [
+                "Alimento",
+                x =>
+                  esc(
+                    getName(
+                      db.foods,
+                      x.foodId
+                    )
+                  )
+              ],
+              [
+                "Qtd",
+                x => fmt(x.qty)
+              ],
+              [
+                "Obs.",
+                x =>
+                  esc(
+                    x.note || ""
+                  )
+              ]
+            ],
+            () => {}
+          )
+
+        : `
+          <div class="empty">
+            Sem entradas no período.
+          </div>
+        `
+    }
+
+    <h3>Saídas e perdas</h3>
+
+    ${
+      mov.length
+
+        ? table(
+            mov,
+            [
+              [
+                "Data",
+                x => fmtDate(x.date)
+              ],
+              [
+                "Tipo",
+                x =>
+                  esc(
+                    x.type === "perda"
+                      ? "Perda"
+                      : "Saída"
+                  )
+              ],
+              [
+                "Origem",
+                x =>
+                  esc(
+                    getName(
+                      db.origins,
+                      x.originId
+                    )
+                  )
+              ],
+              [
+                "Alimento",
+                x =>
+                  esc(
+                    getName(
+                      db.foods,
+                      x.foodId
+                    )
+                  )
+              ],
+              [
+                "Qtd",
+                x => fmt(x.qty)
+              ],
+              [
+                "Motivo",
+                x =>
+                  esc(
+                    getName(
+                      db.reasons,
+                      x.reasonId
+                    )
+                  )
+              ]
+            ],
+            () => {}
+          )
+
+        : `
+          <div class="empty">
+            Sem movimentações no período.
+          </div>
+        `
+    }
+
+  `;
+
+
+  const result =
+    document.getElementById(
+      "reportResult"
+    );
+
+
+  if (result) {
+    result.innerHTML = html;
+  }
+
+}
+
+
+// ============================================================
+// 16. CADASTROS
+// ============================================================
+
+function renderCadastros() {
+
+  const people =
+    document.getElementById(
+      "peopleTable"
+    );
+
+
+  if (people) {
+
+    people.innerHTML = `
+
+      <div class="mini-list">
+
+        ${
+          db.people
+            .map(
+              p => `
+
+                <div class="mini-row">
+
+                  <span>
+
+                    <b>
+                      ${esc(p.name)}
+                    </b>
+
+                    <br>
+
+                    <small>
+                      ${esc(p.registration)}
+                    </small>
+
+                  </span>
+
+                  <button
+                    class="btn danger-btn"
+                    data-del-person="${p.id}"
+                  >
+                    Excluir
+                  </button>
+
+                </div>
+
+              `
+            )
+            .join("")
+          ||
+          `
+            <div class="empty">
+              Nenhuma pessoa.
+            </div>
+          `
+        }
+
+      </div>
+
+    `;
+
+  }
+
+
+  const foods =
+    document.getElementById(
+      "foodsTable"
+    );
+
+
+  if (foods) {
+
+    foods.innerHTML = `
+
+      <div class="mini-list">
+
+        ${
+          db.foods
+            .map(
+              p => `
+
+                <div class="mini-row">
+
+                  <span>
+                    ${esc(p.name)}
+                  </span>
+
+                  <button
+                    class="btn danger-btn"
+                    data-del-food="${p.id}"
+                  >
+                    Excluir
+                  </button>
+
+                </div>
+
+              `
+            )
+            .join("")
+        }
+
+      </div>
+
+    `;
+
+  }
+
+
+  const origins =
+    document.getElementById(
+      "originsTable"
+    );
+
+
+  if (origins) {
+
+    origins.innerHTML = `
+
+      <div class="mini-list">
+
+        ${
+          db.origins
+            .map(
+              p => `
+
+                <div class="mini-row">
+
+                  <span>
+                    ${esc(p.name)}
+                  </span>
+
+                  <button
+                    class="btn danger-btn"
+                    data-del-origin="${p.id}"
+                  >
+                    Excluir
+                  </button>
+
+                </div>
+
+              `
+            )
+            .join("")
+        }
+
+      </div>
+
+    `;
+
+  }
+
+
+  const reasons =
+    document.getElementById(
+      "reasonsTable"
+    );
+
+
+  if (reasons) {
+
+    reasons.innerHTML = `
+
+      <div class="mini-list">
+
+        ${
+          db.reasons
+            .map(
+              p => `
+
+                <div class="mini-row">
+
+                  <span>
+                    ${esc(p.name)}
+                  </span>
+
+                  <button
+                    class="btn danger-btn"
+                    data-del-reason="${p.id}"
+                  >
+                    Excluir
+                  </button>
+
+                </div>
+
+              `
+            )
+            .join("")
+        }
+
+      </div>
+
+    `;
+
+  }
+
+
+  document
+    .querySelectorAll(
+      "[data-del-person]"
+    )
+    .forEach(
+      b =>
+        b.onclick =
+          () =>
+            delBy(
+              "people",
+              b.dataset.delPerson
+            )
+    );
+
+
+  document
+    .querySelectorAll(
+      "[data-del-food]"
+    )
+    .forEach(
+      b =>
+        b.onclick =
+          () =>
+            delBy(
+              "foods",
+              b.dataset.delFood
+            )
+    );
+
+
+  document
+    .querySelectorAll(
+      "[data-del-origin]"
+    )
+    .forEach(
+      b =>
+        b.onclick =
+          () =>
+            delBy(
+              "origins",
+              b.dataset.delOrigin
+            )
+    );
+
+
+  document
+    .querySelectorAll(
+      "[data-del-reason]"
+    )
+    .forEach(
+      b =>
+        b.onclick =
+          () =>
+            delBy(
+              "reasons",
+              b.dataset.delReason
+            )
+    );
+
+}
+
+
+function delBy(
+  key,
+  id
+) {
+
+  if (
+    !confirm(
+      "Excluir cadastro? Registros históricos que já usam este item continuarão salvos."
+    )
+  ) {
+    return;
+  }
+
+
+  db[key] =
+    db[key].filter(
+      x => x.id !== id
+    );
+
+
+  save();
+
+  renderAll();
+
+  toast(
+    "Cadastro excluído."
+  );
+
+}
+
+
+// ============================================================
+// 17. CSV
+// ============================================================
+
+function csvEscape(v) {
+
+  return `"${String(v ?? "")
+    .replace(/"/g, '""')}"`;
+
+}
+
+
+function exportCSV() {
+
+  const start =
+    document.getElementById(
+      "reportStart"
+    )?.value || "";
+
+  const end =
+    document.getElementById(
+      "reportEnd"
+    )?.value || "";
+
+  const origin =
+    document.getElementById(
+      "reportOrigin"
+    )?.value || "";
+
+
+  const rows = [
+    [
+      "Data",
+      "Tipo",
+      "Origem",
+      "Alimento",
+      "Quantidade",
+      "Motivo",
+      "Observação"
+    ]
+  ];
+
+
+  db.entries
+    .filter(
+      x =>
+        (!start || x.date >= start) &&
+        (!end || x.date <= end) &&
+        (!origin || x.originId === origin)
+    )
+    .forEach(
+      x =>
+        rows.push([
+          x.date,
+          "Entrada",
+          getName(
+            db.origins,
+            x.originId
+          ),
+          getName(
+            db.foods,
+            x.foodId
+          ),
+          x.qty,
+          "",
+          x.note || ""
+        ])
+    );
+
+
+  db.movements
+    .filter(
+      x =>
+        (!start || x.date >= start) &&
+        (!end || x.date <= end) &&
+        (!origin || x.originId === origin)
+    )
+    .forEach(
+      x =>
+        rows.push([
+          x.date,
+          x.type === "perda"
+            ? "Perda"
+            : "Saída",
+          getName(
+            db.origins,
+            x.originId
+          ),
+          getName(
+            db.foods,
+            x.foodId
+          ),
+          x.qty,
+          getName(
+            db.reasons,
+            x.reasonId
+          ),
+          x.note || ""
+        ])
+    );
+
+
+  const blob =
+    new Blob(
+      [
+        "\ufeff" +
+        rows
+          .map(
+            r =>
+              r
+                .map(csvEscape)
+                .join(";")
+          )
+          .join("\n")
+      ],
+      {
+        type:
+          "text/csv;charset=utf-8"
+      }
+    );
+
+
+  download(
+    blob,
+    `relatorio_${start || "inicio"}_${end || "fim"}.csv`
+  );
+
+}
+
+
+function download(
+  blob,
+  name
+) {
+
+  const a =
+    document.createElement(
+      "a"
+    );
+
+  a.href =
+    URL.createObjectURL(blob);
+
+  a.download = name;
+
+  a.click();
+
+  setTimeout(
+    () =>
+      URL.revokeObjectURL(
+        a.href
+      ),
+    1000
+  );
+
+}
+
+
+// ============================================================
+// 18. NAVEGAÇÃO
+// ============================================================
+
+function nav() {
+
+  document
+    .querySelectorAll(
+      ".tab,.home-card"
+    )
+    .forEach(
+      b =>
+        b.addEventListener(
+          "click",
+          () => {
+
+            const page =
+              b.dataset.page;
+
+
+            document
+              .querySelectorAll(
+                ".tab"
+              )
+              .forEach(
+                x =>
+                  x.classList.toggle(
+                    "active",
+                    x.dataset.page === page
+                  )
+              );
+
+
+            document
+              .querySelectorAll(
+                ".page"
+              )
+              .forEach(
+                x =>
+                  x.classList.remove(
+                    "active"
+                  )
+              );
+
+
+            const target =
+              document.getElementById(
+                page
+              );
+
+
+            if (target) {
+              target.classList.add(
+                "active"
+              );
+            }
+
+
+            window.scrollTo({
+              top: 0,
+              behavior: "smooth"
+            });
+
+          }
+        )
+    );
+
+
+  const menu =
+    document.getElementById(
+      "menuButton"
+    );
+
+
+  if (menu) {
+
+    menu.addEventListener(
+      "click",
+      () => {
+
+        const tabs =
+          document.querySelector(
+            ".ace-tabs"
+          );
+
+
+        if (tabs) {
+          tabs.classList.toggle(
+            "menu-open"
+          );
+        }
+
+      }
+    );
+
+  }
+
+}
+
+
+// ============================================================
+// 19. EVENTOS DO APLICATIVO
+// ============================================================
+
+function bindEvents() {
+
+  const entryForm =
+    document.getElementById(
+      "entryForm"
+    );
+
+
+  if (entryForm) {
+
+    entryForm.addEventListener(
+      "submit",
+      e => {
+
+        e.preventDefault();
+
+        const f =
+          new FormData(
+            e.target
+          );
+
+
+        db.entries.push({
+
+          id: uid(),
+
+          date:
+            f.get("date"),
+
+          originId:
+            f.get("origin"),
+
+          foodId:
+            f.get("foodId"),
+
+          qty:
+            Number(
+              f.get("qty")
+            ),
+
+          note:
+            f.get("note") || "",
+
+          createdAt:
+            new Date()
+              .toISOString()
+
+        });
+
+
+        save();
+
+        e.target.reset();
+
+        document.getElementById(
+          "entryDate"
+        ).value = isoToday();
+
+        renderAll();
+
+        toast(
+          "Entrada registrada."
+        );
+
+      }
+    );
+
+  }
+
+
+  const movementForm =
+    document.getElementById(
+      "movementForm"
+    );
+
+
+  if (movementForm) {
+
+    movementForm.addEventListener(
+      "submit",
+      e => {
+
+        e.preventDefault();
+
+        const f =
+          new FormData(
+            e.target
+          );
+
+
+        const origin =
+          f.get("origin");
+
+        const food =
+          f.get("foodId");
+
+        const qty =
+          Number(
+            f.get("qty")
+          );
+
+
+        const st =
+          calcStock();
+
+
+        const available =
+          Number(
+            st[origin]?.[food] || 0
+          );
+
+
+        if (qty > available) {
+
+          toast(
+            `Saldo insuficiente. Disponível em ${getName(
+              db.origins,
+              origin
+            )}: ${fmt(available)}.`
+          );
+
+          return;
+
+        }
+
+
+        db.movements.push({
+
+          id: uid(),
+
+          date:
+            f.get("date"),
+
+          type:
+            f.get("type"),
+
+          originId:
+            origin,
+
+          foodId:
+            food,
+
+          qty:
+            qty,
+
+          reasonId:
+            f.get("reasonId"),
+
+          note:
+            f.get("note") || "",
+
+          createdAt:
+            new Date()
+              .toISOString()
+
+        });
+
+
+        save();
+
+        e.target.reset();
+
+        document.getElementById(
+          "movementDate"
+        ).value = isoToday();
+
+        renderAll();
+
+        toast(
+          "Movimentação registrada."
+        );
+
+      }
+    );
+
+  }
+
+
+  const dashboardDate =
+    document.getElementById(
+      "dashboardDate"
+    );
+
+
+  if (dashboardDate) {
+
+    dashboardDate.addEventListener(
+      "change",
+      renderDashboard
+    );
+
+  }
+
+
+  const entryDate =
+    document.getElementById(
+      "entryDate"
+    );
+
+
+  if (entryDate) {
+
+    entryDate.addEventListener(
+      "change",
+      renderEntries
+    );
+
+  }
+
+
+  const attendanceDate =
+    document.getElementById(
+      "attendanceDate"
+    );
+
+
+  if (attendanceDate) {
+
+    attendanceDate.addEventListener(
+      "change",
+      renderAttendance
+    );
+
+  }
+
+
+  const attendanceSearch =
+    document.getElementById(
+      "attendanceSearch"
+    );
+
+
+  if (attendanceSearch) {
+
+    attendanceSearch.addEventListener(
+      "input",
+      renderAttendance
+    );
+
+  }
+
+
+  const refreshStock =
+    document.getElementById(
+      "refreshStock"
+    );
+
+
+  if (refreshStock) {
+
+    refreshStock.addEventListener(
+      "click",
+      () => {
+
+        renderStock();
+
+        toast(
+          "Estoque atualizado."
+        );
+
+      }
+    );
+
+  }
+
+
+  const generateReport =
+    document.getElementById(
+      "generateReport"
+    );
+
+
+  if (generateReport) {
+
+    generateReport.addEventListener(
+      "click",
+      renderReport
+    );
+
+  }
+
+
+  const exportCSVButton =
+    document.getElementById(
+      "exportCSV"
+    );
+
+
+  if (exportCSVButton) {
+
+    exportCSVButton.addEventListener(
+      "click",
+      exportCSV
+    );
+
+  }
+
+
+  const personForm =
+    document.getElementById(
+      "personForm"
+    );
+
+
+  if (personForm) {
+
+    personForm.addEventListener(
+      "submit",
+      e => {
+
+        e.preventDefault();
+
+        const f =
+          new FormData(
+            e.target
+          );
+
+
+        db.people.push({
+
+          id: uid(),
+
+          name:
+            f.get("name")
+              .trim(),
+
+          registration:
+            f.get("registration")
+              .trim()
+
+        });
+
+
+        save();
+
+        e.target.reset();
+
+        renderAll();
+
+        toast(
+          "Pessoa cadastrada."
+        );
+
+      }
+    );
+
+  }
+
+
+  const foodForm =
+    document.getElementById(
+      "foodForm"
+    );
+
+
+  if (foodForm) {
+
+    foodForm.addEventListener(
+      "submit",
+      e => {
+
+        e.preventDefault();
+
+        const f =
+          new FormData(
+            e.target
+          );
+
+
+        db.foods.push({
+
+          id: uid(),
+
+          name:
+            f.get("name")
+              .trim()
+
+        });
+
+
+        save();
+
+        e.target.reset();
+
+        renderAll();
+
+        toast(
+          "Alimento cadastrado."
+        );
+
+      }
+    );
+
+  }
+
+
+  const originForm =
+    document.getElementById(
+      "originForm"
+    );
+
+
+  if (originForm) {
+
+    originForm.addEventListener(
+      "submit",
+      e => {
+
+        e.preventDefault();
+
+        const f =
+          new FormData(
+            e.target
+          );
+
+
+        db.origins.push({
+
+          id: uid(),
+
+          name:
+            f.get("name")
+              .trim()
+
+        });
+
+
+        save();
+
+        e.target.reset();
+
+        renderAll();
+
+        toast(
+          "Origem cadastrada."
+        );
+
+      }
+    );
+
+  }
+
+
+  const reasonForm =
+    document.getElementById(
+      "reasonForm"
+    );
+
+
+  if (reasonForm) {
+
+    reasonForm.addEventListener(
+      "submit",
+      e => {
+
+        e.preventDefault();
+
+        const f =
+          new FormData(
+            e.target
+          );
+
+
+        db.reasons.push({
+
+          id: uid(),
+
+          name:
+            f.get("name")
+              .trim()
+
+        });
+
+
+        save();
+
+        e.target.reset();
+
+        renderAll();
+
+        toast(
+          "Motivo cadastrado."
+        );
+
+      }
+    );
+
+  }
+
+
+  const backupBtn =
+    document.getElementById(
+      "backupBtn"
+    );
+
+
+  if (backupBtn) {
+
+    backupBtn.addEventListener(
+      "click",
+      () =>
+        download(
+          new Blob(
+            [
+              JSON.stringify(
+                db,
+                null,
+                2
+              )
+            ],
+            {
+              type:
+                "application/json"
+            }
+          ),
+          `backup_controle_alimentos_${isoToday()}.json`
+        )
+    );
+
+  }
+
+
+  const restoreFile =
+    document.getElementById(
+      "restoreFile"
+    );
+
+
+  if (restoreFile) {
+
+    restoreFile.addEventListener(
+      "change",
+      async e => {
+
+        const file =
+          e.target.files[0];
+
+        if (!file) return;
+
+
+        try {
+
+          const obj =
+            JSON.parse(
+              await file.text()
+            );
+
+
+          if (
+            !obj.foods ||
+            !obj.origins ||
+            !obj.entries
+          ) {
+
+            throw Error(
+              "Arquivo inválido"
+            );
+
+          }
+
+
+          db = obj;
+
+          save();
+
+          renderAll();
+
+          toast(
+            "Backup restaurado."
+          );
+
+
+        } catch (err) {
+
+          console.error(err);
+
+          alert(
+            "Não foi possível restaurar este arquivo."
+          );
+
+        }
+
+
+        e.target.value = "";
+
+      }
+    );
+
+  }
+
+
+  const resetBtn =
+    document.getElementById(
+      "resetBtn"
+    );
+
+
+  if (resetBtn) {
+
+    resetBtn.addEventListener(
+      "click",
+      () => {
+
+        if (
+          !confirm(
+            "Isso apagará os dados atuais deste aparelho. Tem certeza?"
+          )
+        ) {
+          return;
+        }
+
+
+        localStorage.removeItem(
+          KEY
+        );
+
+
+        db = load();
+
+        setDates();
+
+        renderAll();
+
+        toast(
+          "Dados padrão restaurados."
+        );
+
+      }
+    );
+
+  }
+
+}
+
+
+// ============================================================
+// 20. PWA
+// ============================================================
+
+function setupPWA() {
+
+  window.addEventListener(
+    "beforeinstallprompt",
+    e => {
+
+      e.preventDefault();
+
+      deferredPrompt = e;
+
+
+      const button =
+        document.getElementById(
+          "installBtn"
+        );
+
+
+      if (button) {
+        button.classList.remove(
+          "hidden"
+        );
+      }
+
+    }
+  );
+
+
+  const installBtn =
+    document.getElementById(
+      "installBtn"
+    );
+
+
+  if (installBtn) {
+
+    installBtn.addEventListener(
+      "click",
+      async () => {
+
+        if (!deferredPrompt) {
+          return;
+        }
+
+
+        deferredPrompt.prompt();
+
+        deferredPrompt = null;
+
+        installBtn.classList.add(
+          "hidden"
+        );
+
+      }
+    );
+
+  }
+
+
+  if (
+    "serviceWorker" in navigator
+  ) {
+
+    window.addEventListener(
+      "load",
+      () => {
+
+        navigator.serviceWorker
+          .register("sw.js")
+          .catch(
+            err =>
+              console.warn(
+                "Service Worker:",
+                err
+              )
+          );
+
+      }
+    );
+
+  }
+
+}
+
+
+// ============================================================
+// 21. RENDERIZAÇÃO GERAL
+// ============================================================
+
+function renderAll() {
+
+  refreshSelects();
+
+  renderDashboard();
+
+  renderEntries();
+
+  renderMovements();
+
+  renderAttendance();
+
+  renderStock();
+
+  renderCadastros();
+
+}
+
+
+// ============================================================
+// 22. INICIALIZAÇÃO DO APLICATIVO
+// ============================================================
+
+async function initApp() {
+
+  console.log(
+    "ACE Controle de Alimentos iniciado."
+  );
+
+
+  try {
+
+    db = await loadFromSupabase();
+
+
+    setDates();
+
+    nav();
+
+    bindEvents();
+
+    setupPWA();
+
+    addUserBar();
+
+    renderAll();
+
+
+    console.log(
+      "Aplicativo carregado com sucesso."
+    );
+
   } catch (error) {
-    console.error("PWA Service Worker:", error);
+
+    console.error(
+      "Erro ao iniciar aplicativo:",
+      error
+    );
+
+    alert(
+      "Não foi possível carregar os dados do sistema.\n\n" +
+      (error?.message || "Verifique a conexão com o Supabase.")
+    );
+
   }
+
 }
 
-async function diagnosePWA() {
-  const results = [];
-  const add = (name, ok, detail) =>
-    results.push((ok ? "✅ " : "❌ ") + name + ": " + detail);
 
-  add("HTTPS", location.protocol === "https:", location.protocol);
+// ============================================================
+// 23. VERIFICA LOGIN
+// ============================================================
 
-  const manifestLink = document.querySelector('link[rel="manifest"]');
-  add("Manifest link", !!manifestLink,
-      manifestLink?.getAttribute("href") || "não encontrado");
+async function startAuth() {
 
-  let manifest = null;
-  try {
-    const r = await fetch("/Controle-de-Atividade/manifest.json", {cache:"no-store"});
-    manifest = r.ok ? await r.json() : null;
-    add("Manifest publicado", r.ok, r.status + " " + r.statusText);
-  } catch {
-    add("Manifest publicado", false, "erro ao carregar");
-  }
+  createLoginScreen();
 
-  if (manifest) {
-    add("display standalone", manifest.display === "standalone", manifest.display || "ausente");
-    add("start_url", manifest.start_url === "/Controle-de-Atividade/",
-        manifest.start_url || "ausente");
-    add("scope", manifest.scope === "/Controle-de-Atividade/",
-        manifest.scope || "ausente");
-    add("ícone 192", manifest.icons?.some(i => i.sizes === "192x192"), "verificado");
-    add("ícone 512", manifest.icons?.some(i => i.sizes === "512x512"), "verificado");
-  }
 
   try {
-    const regs = await navigator.serviceWorker.getRegistrations();
-    const reg = regs.find(r => r.scope.includes("/Controle-de-Atividade/"));
-    add("Service Worker registrado", !!reg, reg ? reg.scope : "não encontrado");
-    add("Service Worker controlando", !!navigator.serviceWorker.controller,
-        navigator.serviceWorker.controller ? "sim" : "não");
-  } catch {
-    add("Service Worker", false, "erro ao consultar");
+
+    const {
+      data,
+      error
+    } =
+      await supabaseClient.auth.getSession();
+
+
+    if (error) {
+      throw error;
+    }
+
+
+    if (data?.session?.user) {
+
+      currentUser =
+        data.session.user;
+
+
+      document
+        .getElementById(
+          "loginScreen"
+        )
+        ?.remove();
+
+
+      initApp();
+
+      return;
+
+    }
+
+
+    // Não está logado.
+    // Mantém a tela de login aberta.
+
+  } catch (err) {
+
+    console.error(
+      "Erro ao verificar sessão:",
+      err
+    );
+
+
+    const error =
+      document.getElementById(
+        "loginError"
+      );
+
+
+    if (error) {
+
+      error.textContent =
+        "Não foi possível conectar ao Supabase. Verifique a URL e a Publishable Key.";
+
+      error.classList.add(
+        "show"
+      );
+
+    }
+
   }
 
-  add("beforeinstallprompt", !!deferredInstallPrompt,
-      deferredInstallPrompt ? "disponível" : "não fornecido pelo Chrome");
-  add("Modo aplicativo", isStandalone(),
-      isStandalone() ? "standalone" : "navegador");
 
-  alert("DIAGNÓSTICO PWA\n\n" + results.join("\n"));
+  // Monitora alterações de autenticação
+
+  supabaseClient.auth.onAuthStateChange(
+    (event, session) => {
+
+      if (
+        event === "SIGNED_IN" &&
+        session?.user
+      ) {
+
+        currentUser =
+          session.user;
+
+        document
+          .getElementById(
+            "loginScreen"
+          )
+          ?.remove();
+
+        initApp();
+
+      }
+
+
+      if (
+        event === "SIGNED_OUT"
+      ) {
+
+        location.reload();
+
+      }
+
+    }
+  );
+
 }
 
-window.addEventListener("load", () => {
-  registerPWA();
-  if (isStandalone()) showInstallButton(false);
-});
+
+// ============================================================
+// 24. INÍCIO
+// ============================================================
+
+startAuth();
